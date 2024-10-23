@@ -65,33 +65,33 @@ public class Test {
 		
 		blobs.upload(blobUrl.toString(), randomBytes( 100 ), token);
 
-		
+
 		var s2id = s2.value().getShortId();
-		
+
 		show(shorts.follow("liskov", "wales", true, "54321"));
 		show(shorts.followers("wales", "12345"));
-		
+
 		show(shorts.like(s2id, "liskov", true, "54321"));
 		show(shorts.like(s2id, "liskov", true, "54321"));
 		show(shorts.likes(s2id , "54321"));
 		show(shorts.getFeed("liskov", "12345"));
 		show(shorts.getShort( s2id ));
-		
+
 		show(shorts.getShorts( "wales" ));
-		
+
 		show(shorts.followers("wales", "12345"));
 
 		show(shorts.getFeed("liskov", "12345"));
 
 		show(shorts.getShort( s2id ));
 //
-//		
+//
 //		blobs.forEach( b -> {
 //			var r = b.download(blobId);
 //			System.out.println( Hex.of(Hash.sha256( bytes )) + "-->" + Hex.of(Hash.sha256( r.value() )));
-//			
+//
 //		});
-		
+
 		 show(users.deleteUser("wales", "12345"));
 
 		System.exit(0);

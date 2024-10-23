@@ -34,4 +34,16 @@ public class ConfigLoader {
     public String getblobShortsName() {
         return properties.getProperty("azure.blobShortsName");
     }
+
+    public String getRedisHostname() {
+        return properties.getProperty("azure.redisHostname");
+    }
+
+    public String getRedisKey() {
+        return properties.getProperty("azure.redisKey");
+    }
+
+    public boolean isCacheEnabled() {
+        return Boolean.parseBoolean(properties.getProperty("azure.cacheEnabled"));
+    }
 }
