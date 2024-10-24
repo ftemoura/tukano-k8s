@@ -1,44 +1,83 @@
 package tukano.impl;
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.logging.Logger;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTCreationException;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.auth0.jwt.interfaces.JWTVerifier;
 import utils.Hash;
 
 public class Token {
 	private static Logger Log = Logger.getLogger(Token.class.getName());
 
-	private static final String DELIMITER = "-";
-	private static final long MAX_TOKEN_AGE = 10000;
-	private static String secret;
+	public static final long MAX_TOKEN_AGE = 1000000;
+	private static Algorithm algorithm;
 
 	public static void setSecret(String s) {
-		secret = s;
+		algorithm = Algorithm.HMAC256(s);
 	}
 
-	public static String get() {
-		var timestamp = System.currentTimeMillis();
-		var signature = Hash.of(timestamp, secret);
-		return String.format("%s%s%s", timestamp, DELIMITER, signature);
+	public enum Service {
+		AUTH,
+		BLOBS
 	}
 	
-	public static String get(String id) {
-		var timestamp = System.currentTimeMillis();
-		var signature = Hash.of(id, timestamp, secret);
-		return String.format("%s%s%s", timestamp, DELIMITER, signature);
+	public static String get(Service service, String id) {
+		try {
+			String token = JWT.create()
+					.withIssuer(service.toString())
+					.withIssuedAt(Date.from(Instant.now()))
+					.withSubject(id)
+					.sign(algorithm);
+			return token;
+		} catch (JWTCreationException exception){
+			return null;
+			// Invalid Signing configuration / Couldn't convert Claims.
+		}
 	}
 
-	public static boolean isValid(String tokenStr, String id) {
+	public static String getSubject(String tokenStr) {
+		return JWT.decode(tokenStr).getSubject();
+	}
+
+	public static boolean isValid(String tokenStr, Service service, String id) {
+		DecodedJWT decodedJWT;
 		try {
-			var bits = tokenStr.split(DELIMITER);
-			var timestamp = Long.valueOf(bits[0]);
-			var hmac = Hash.of(id, timestamp, secret);
-			var elapsed = Math.abs(System.currentTimeMillis() - timestamp);			
-			Log.info(String.format("hash ok:%s, elapsed %s ok: %s\n", hmac.equals(bits[1]), elapsed, elapsed < MAX_TOKEN_AGE));
-			return hmac.equals(bits[1]) && elapsed < MAX_TOKEN_AGE;			
-		} catch( Exception x ) {
-			x.printStackTrace();
+			JWTVerifier verifier = JWT.require(algorithm)
+					.withIssuer(service.toString())
+					.build();
+			decodedJWT = verifier.verify(tokenStr);
+			if (!decodedJWT.getSubject().equals(id) || // wrong id
+					(decodedJWT.getIssuedAt().getTime() + MAX_TOKEN_AGE < Instant.now().toEpochMilli())) // is over
+				return false;
+
+		} catch (JWTVerificationException exception){
 			return false;
+			// Invalid signature/claims
 		}
+		return true;
+	}
+
+	public static boolean isValid(String tokenStr, Service service) {
+		DecodedJWT decodedJWT;
+		try {
+			JWTVerifier verifier = JWT.require(algorithm)
+					.withIssuer(service.toString())
+					.build();
+			decodedJWT = verifier.verify(tokenStr);
+			if (decodedJWT.getIssuedAt().getTime() + MAX_TOKEN_AGE < Instant.now().toEpochMilli()) // is over
+				return false;
+
+		} catch (JWTVerificationException exception){
+			return false;
+			// Invalid signature/claims
+		}
+		return true;
 	}
 
 }

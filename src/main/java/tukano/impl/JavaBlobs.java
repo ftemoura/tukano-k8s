@@ -79,7 +79,7 @@ public class JavaBlobs implements Blobs {
 	public Result<Void> deleteAllBlobs(String userId, String token) {
 		Log.info(() -> format("deleteAllBlobs : userId = %s, token=%s\n", userId, token));
 
-		if( ! Token.isValid( token, userId ) )
+		if( ! Token.isValid( token, Token.Service.BLOBS, userId ) )
 			return error(FORBIDDEN);
 		
 		return storage.delete( toPath(userId));
@@ -87,7 +87,7 @@ public class JavaBlobs implements Blobs {
 	
 	private boolean validBlobId(String blobId, String token) {		
 		System.out.println( toURL(blobId));
-		return Token.isValid(token, toURL(blobId));
+		return Token.isValid(token, Token.Service.BLOBS, toURL(blobId));
 	}
 
 	private String toPath(String blobId) {

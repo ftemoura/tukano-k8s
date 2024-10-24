@@ -18,7 +18,7 @@ public class TukanoRestServer {
 	static final String INETADDR_ANY = "0.0.0.0";
 	static String SERVER_BASE_URI = "http://%s:%s/rest";
 
-	public static final int PORT = 8080;
+	public static final int PORT = 8081;
 
 	public static String serverURI;
 			

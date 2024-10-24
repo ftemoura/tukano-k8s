@@ -19,7 +19,6 @@ public class Test {
 	}
 	
 	public static void main(String[] args ) throws Exception {
-		/*
 		new Thread( () -> {
 			try { 
 				TukanoRestServer.main( new String[] {} );
@@ -27,11 +26,9 @@ public class Test {
 				x.printStackTrace();
 			}
 		}).start();
-		*/
 		
-		Thread.sleep(1000);
-		
-		var serverURI = String.format("http://localhost:%s/tukano/rest", TukanoRestServer.PORT);
+		var serverURI = String.format("http://localhost:%s/rest", TukanoRestServer.PORT);
+		//var serverURI = "https://tukano-60045-60174-as.azurewebsites.net/rest";
 		
 		var blobs = new RestBlobsClient(serverURI);
 		var users = new RestUsersClient( serverURI);
