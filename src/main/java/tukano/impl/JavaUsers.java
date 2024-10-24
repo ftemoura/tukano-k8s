@@ -8,21 +8,25 @@ import static tukano.api.Result.ok;
 import static tukano.api.Result.ErrorCode.BAD_REQUEST;
 import static tukano.api.Result.ErrorCode.FORBIDDEN;
 
+import java.time.Instant;
+import java.time.temporal.TemporalUnit;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
+import jakarta.ws.rs.core.*;
 import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
 import utils.DB;
 
 public class JavaUsers implements Users {
-	
+
 	private static Logger Log = Logger.getLogger(JavaUsers.class.getName());
 
 	private static Users instance;
-	
+
 	synchronized public static Users getInstance() {
 		if( instance == null )
 			instance = new JavaUsers();
@@ -42,13 +46,34 @@ public class JavaUsers implements Users {
 	}
 
 	@Override
-	public Result<User> getUser(String userId, String pwd) {
-		Log.info( () -> format("getUser : userId = %s, pwd = %s\n", userId, pwd));
+	public Result<Response> login(String userId, String pwd) {
+		if (userId == null)
+			return error(BAD_REQUEST);
+		var res = validatedUserOrError( DB.getOne( userId, User.class), pwd);
+		if (!res.isOK()) {
+			return Result.error(res.error());
+		} else {
+			NewCookie c = new NewCookie.Builder(Token.Service.AUTH.toString())
+					.value(Token.get(Token.Service.AUTH, userId))
+					.expiry(Date.from(Instant.now().plusMillis(Token.MAX_TOKEN_AGE)))
+					.path("/")
+					.build();
+			return ok(Response.ok().cookie(c).build());
+		}
+	}
+
+	@Override
+	public Result<User> getUser(SecurityContext sc, String userId) {
+		Log.info( () -> format("getUser : userId = %s\n", userId));
 
 		if (userId == null)
 			return error(BAD_REQUEST);
-		
-		return validatedUserOrError( DB.getOne( userId, User.class), pwd);
+
+		// authorization: userId requested matches the requester token
+		if( !userId.equals(sc.getUserPrincipal().getName()))
+			return error(FORBIDDEN);
+
+		return  DB.getOne( userId, User.class);
 	}
 
 	@Override
@@ -72,8 +97,9 @@ public class JavaUsers implements Users {
 
 			// Delete user shorts and related info asynchronously in a separate thread
 			Executors.defaultThreadFactory().newThread( () -> {
-				JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
-				JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(userId));
+				//TODO fix tokens
+				JavaShorts.getInstance().deleteAllShorts(userId, pwd, /*Token.get(userId)*/ Token.get(Token.Service.BLOBS, userId));
+				JavaBlobs.getInstance().deleteAllBlobs(userId, /*Token.get(userId)*/ Token.get(Token.Service.BLOBS, userId));
 			}).start();
 			
 			return DB.deleteOne( user);

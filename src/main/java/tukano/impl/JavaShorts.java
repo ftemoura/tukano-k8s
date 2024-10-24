@@ -10,10 +10,12 @@ import static tukano.api.Result.ErrorCode.BAD_REQUEST;
 import static tukano.api.Result.ErrorCode.FORBIDDEN;
 import static utils.DB.getOne;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 
+import jakarta.ws.rs.core.SecurityContext;
 import tukano.api.Blobs;
 import tukano.api.Result;
 import tukano.api.Short;
@@ -23,6 +25,7 @@ import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
 import tukano.impl.rest.TukanoRestServer;
 import utils.DB;
+import utils.FakeSecurityContext;
 
 public class JavaShorts implements Shorts {
 
@@ -37,7 +40,6 @@ public class JavaShorts implements Shorts {
 	}
 	
 	private JavaShorts() {}
-	
 	
 	@Override
 	public Result<Short> createShort(String userId, String password) {
@@ -79,8 +81,8 @@ public class JavaShorts implements Shorts {
 					
 					var query = format("DELETE Likes l WHERE l.shortId = '%s'", shortId);
 					hibernate.createNativeQuery( query, Likes.class).executeUpdate();
-					
-					JavaBlobs.getInstance().delete(shrt.getBlobUrl(), Token.get() );
+					// TODO fix tokens
+					JavaBlobs.getInstance().delete(shrt.getBlobUrl(), /*Token.get()*/ Token.get(Token.Service.BLOBS, shrt.getBlobUrl()) );
 				});
 			});	
 		});
@@ -152,12 +154,12 @@ public class JavaShorts implements Shorts {
 	}
 		
 	protected Result<User> okUser( String userId, String pwd) {
-		return JavaUsers.getInstance().getUser(userId, pwd);
+		return JavaUsers.getInstance().getUser(FakeSecurityContext.get(userId), userId);
 	}
 	
 	private Result<Void> okUser( String userId ) {
-		var res = okUser( userId, "");
-		if( res.error() == FORBIDDEN )
+		var res = okUser(userId, "");
+		if( res.error() != FORBIDDEN )
 			return ok();
 		else
 			return error( res.error() );
@@ -167,8 +169,9 @@ public class JavaShorts implements Shorts {
 	public Result<Void> deleteAllShorts(String userId, String password, String token) {
 		Log.info(() -> format("deleteAllShorts : userId = %s, password = %s, token = %s\n", userId, password, token));
 
-		if( ! Token.isValid( token, userId ) )
-			return error(FORBIDDEN);
+		// TODO fix tokens
+		//if( ! Token.isValid( token, "shorts",userId ) )
+		//	return error(FORBIDDEN);
 		
 		return DB.transaction( (hibernate) -> {
 						

@@ -3,8 +3,7 @@ package tukano.clients.rest;
 import java.util.List;
 
 import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.core.GenericType;
-import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.*;
 import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
@@ -24,12 +23,12 @@ public class RestUsersClient extends RestClient implements Users {
 			.post(Entity.entity(user, MediaType.APPLICATION_JSON)), String.class );
 	}
 
-	private Result<User> _getUser(String userId, String pwd) {
-		return super.toJavaResult(
+	private Result<User> _getUser(String userId, SecurityContext sc) {
+		return null;/*super.toJavaResult(
 				target.path( userId )
-				.queryParam(RestUsers.PWD, pwd).request()
 				.accept(MediaType.APPLICATION_JSON)
-				.get(), User.class);
+				.get(), User.class);*/
+		// TODO fix clients?
 	}
 	
 	public Result<User> _updateUser(String userId, String password, User user) {
@@ -67,8 +66,13 @@ public class RestUsersClient extends RestClient implements Users {
 	}
 
 	@Override
-	public Result<User> getUser(String userId, String pwd) {
-		return super.reTry( () -> _getUser(userId, pwd));
+	public Result<Response> login(String userId, String pwd) {
+		return Result.error(Result.ErrorCode.NOT_IMPLEMENTED);
+	}
+
+	@Override
+	public Result<User> getUser(SecurityContext sc, String userId) {
+		return super.reTry( () -> _getUser(userId, sc));
 	}
 
 	@Override
