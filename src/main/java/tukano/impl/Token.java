@@ -23,8 +23,9 @@ public class Token {
 	}
 
 	public enum Service {
-		AUTH,
-		BLOBS
+		AUTH, // to be used for user authentication/authorization
+		BLOBS, // to be used for blobs
+		INTERNAL // to be used between internal services
 	}
 	
 	public static String get(Service service, String id) {

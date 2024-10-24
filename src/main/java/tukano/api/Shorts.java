@@ -54,7 +54,6 @@ public interface Shorts {
 	 */
 	Result<Short> getShort(String shortId);
 	
-	
 	/**
 	 * Retrieves the list of identifiers of the shorts created by the given user, with its total likes count updated.
 	 * 
@@ -62,7 +61,7 @@ public interface Shorts {
 	 * @return (OK, List<String>|empty list) or NOT_FOUND if the user does not exist
 	 */
 	Result<List<String>> getShorts( String userId );
-	
+
 	/**
 	 * Causes a user to follow the shorts of another user.
 	 * 

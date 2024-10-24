@@ -37,7 +37,7 @@ public interface RestUsers {
 	@AuthRequired
 	@Path("/{" + USER_ID+ "}")
 	@Produces(MediaType.APPLICATION_JSON)
-	User getUser(@Context SecurityContext sc, @Context HttpHeaders headers, @PathParam(USER_ID) String userId);
+	User getUser(@Context SecurityContext sc,  @PathParam(USER_ID) String userId);
 	
 	
 	@PUT
@@ -45,14 +45,14 @@ public interface RestUsers {
 	@Path("/{" + USER_ID+ "}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	User updateUser(@Context SecurityContext sc, @Context HttpHeaders headers, @PathParam( USER_ID ) String userId, User user);
+	User updateUser(@Context SecurityContext sc, @PathParam( USER_ID ) String userId, User user);
 	
 	
 	@DELETE
 	@AuthRequired
 	@Path("/{" + USER_ID+ "}")
 	@Produces(MediaType.APPLICATION_JSON)
-	User deleteUser(@Context SecurityContext sc, @Context HttpHeaders headers, @PathParam(USER_ID) String userId);
+	User deleteUser(@Context SecurityContext sc, @PathParam(USER_ID) String userId);
 	
 	
 	@GET

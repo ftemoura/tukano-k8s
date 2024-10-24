@@ -32,6 +32,7 @@ public interface Users {
 
 	/**
 	 * Obtains the information on the user identified by userId
+	 * @param sc - the SecurityContext including information of the authenticated user.
 	 * @param userId - the userId of the user
 	 * @return OK and the user object, if the userId exists and password matches the existing password; 
 	 *         FORBIDDEN - if the password is incorrect; 
@@ -42,8 +43,8 @@ public interface Users {
 	/**
 	 * Modifies the information of a user. Value of null, in any field of the user argument, means the field will remain as unchanged 
 	 * (the userId cannot be modified).
+	 * @param sc - the SecurityContext including information of the authenticated user.
 	 * @param userId - the userId of the user
-	 * @param pwd  - password of the user
 	 * @param user - Updated information
 	 * @return OK and the updated user object, if the userId exists and password matches the existing password 
 	 *         FORBIDDEN - if the password is incorrect 
@@ -54,8 +55,8 @@ public interface Users {
 	
 	/**
 	 * Deletes the user identified by userId
+	 * @param sc - the SecurityContext including information of the authenticated user.
 	 * @param userId - the userId of the user
-	 * @param pwd - password of the user
 	 * @return OK and the deleted user object, if the name exists and pwd matches the
 	 *         existing password 
 	 *         FORBIDDEN if the password is incorrect 
