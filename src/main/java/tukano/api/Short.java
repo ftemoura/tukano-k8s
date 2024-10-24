@@ -1,8 +1,13 @@
 package tukano.api;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import org.hibernate.annotations.UpdateTimestamp;
 import tukano.impl.Token;
+
+import java.time.LocalDateTime;
 
 /**
  * Represents a Short video uploaded by an user.
@@ -15,7 +20,10 @@ import tukano.impl.Token;
  */
 @Entity
 public class Short {
-	
+
+	@UpdateTimestamp
+	@JsonSerialize(using = LocalDateTimeSerializer.class)
+	private LocalDateTime lastModified;
 	@Id
 	String shortId;
 	String ownerId;
@@ -78,10 +86,14 @@ public class Short {
 		this.totalLikes = totalLikes;
 	}
 
+	public LocalDateTime getLastModified() {
+		return lastModified;
+	}
+
 	@Override
 	public String toString() {
 		return "Short [shortId=" + shortId + ", ownerId=" + ownerId + ", blobUrl=" + blobUrl + ", timestamp="
-				+ timestamp + ", totalLikes=" + totalLikes + "]";
+				+ timestamp + ", totalLikes=" + totalLikes + ", " + lastModified +"]";
 	}
 	
 	public Short copyWithLikes_And_Token( long totLikes) { // TODO token fix (maybe not working)

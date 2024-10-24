@@ -1,5 +1,7 @@
 package tukano.clients.rest;
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 
 import jakarta.ws.rs.client.Entity;
@@ -8,6 +10,7 @@ import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
 import tukano.api.rest.RestUsers;
+import tukano.impl.Token;
 
 
 public class RestUsersClient extends RestClient implements Users {
@@ -24,30 +27,44 @@ public class RestUsersClient extends RestClient implements Users {
 	}
 
 	private Result<User> _getUser(String userId, SecurityContext sc) {
-		return null;/*super.toJavaResult(
-				target.path( userId )
+		NewCookie c = new NewCookie.Builder(Token.Service.AUTH.toString())
+				.value(Token.get(Token.Service.AUTH, userId))
+				.expiry(Date.from(Instant.now().plusMillis(Token.MAX_TOKEN_AGE)))
+				.path("/")
+				.build();
+		return super.toJavaResult(
+				target.path( userId ).request()
 				.accept(MediaType.APPLICATION_JSON)
-				.get(), User.class);*/
+						.cookie(c.getName(), c.getValue())
+				.get(), User.class);
 		// TODO fix clients?
 	}
 	
-	public Result<User> _updateUser(String userId, String password, User user) {
+	public Result<User> _updateUser(SecurityContext sc, String userId, User user) {
+
+		NewCookie c = new NewCookie.Builder(Token.Service.AUTH.toString())
+				.value(Token.get(Token.Service.AUTH, userId))
+				.expiry(Date.from(Instant.now().plusMillis(Token.MAX_TOKEN_AGE)))
+				.path("/")
+				.build();
 		return super.toJavaResult(
 				target
 				.path( userId )
-				.queryParam(RestUsers.PWD, password)
+				.queryParam(RestUsers.PWD)
 				.request()
 				.accept(MediaType.APPLICATION_JSON)
-				.put(Entity.entity(user, MediaType.APPLICATION_JSON)), User.class);
+						.cookie(c.getName(), c.getValue())
+						.put(Entity.entity(user, MediaType.APPLICATION_JSON)), User.class);
 	}
 
-	public Result<User> _deleteUser(String userId, String password) {
+	public Result<User> _deleteUser(SecurityContext sc, String userId) {
+		String token = sc.getUserPrincipal().getName();
 		return super.toJavaResult(
 				target
 				.path( userId )
-				.queryParam(RestUsers.PWD, password)
 				.request()
 				.accept(MediaType.APPLICATION_JSON)
+						.header("Authorization", "Bearer " + token)
 				.delete(), User.class);
 	}
 
@@ -76,13 +93,13 @@ public class RestUsersClient extends RestClient implements Users {
 	}
 
 	@Override
-	public Result<User> updateUser(String userId, String pwd, User user) {
-		return super.reTry( () -> _updateUser(userId, pwd, user));
+	public Result<User> updateUser(SecurityContext sc, String userId, User user) {
+		return super.reTry( () -> _updateUser(sc, userId, user));
 	}
 
 	@Override
-	public Result<User> deleteUser(String userId, String pwd) {
-		return super.reTry( () -> _deleteUser(userId, pwd));
+	public Result<User> deleteUser(SecurityContext sc, String userId) {
+		return super.reTry( () -> _deleteUser(sc, userId));
 	}
 
 	@Override

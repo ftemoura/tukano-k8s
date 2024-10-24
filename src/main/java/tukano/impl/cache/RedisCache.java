@@ -4,11 +4,12 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.Transaction;
+import redis.clients.jedis.params.SetParams;
 import tukano.api.Result;
 import utils.ConfigLoader;
 import utils.Pair;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -49,7 +50,7 @@ public class RedisCache {
 
     }
 
-    public <T> Result<T> execute(Jedis jedis, Function<Transaction, Result<T>> func) {
+    protected  <T> Result<T> execute(Jedis jedis, Function<Transaction, Result<T>> func) {
         try {
             Transaction transaction = jedis.multi();
             Result<T> result = func.apply(transaction);
@@ -66,7 +67,7 @@ public class RedisCache {
         }
     }
 
-    public Result<Void> setKeyValue(String key, String value, Instant timestamp) {
+    protected Result<Void> setKeyValue(String key, String value, LocalDateTime timestamp, int ttl) {
         return cache(__ -> {
             try (Jedis jedis = getCachePool().getResource()) {
                 jedis.watch(key);
@@ -74,13 +75,13 @@ public class RedisCache {
                 String newValueWithTimestamp = value + "," + timestamp.toString();
                 if (existingValueWithTimestamp != null) {
                     String[] parts = existingValueWithTimestamp.split(",");
-                    Instant existingTimestamp = Instant.parse(parts[1]);
+                    LocalDateTime existingTimestamp = LocalDateTime.parse(parts[1]);
 
                     if (!timestamp.isAfter(existingTimestamp))
                         throw new RedisTimestampTransactionException("Conflict: New timestamp is not after the current timestamp.");
                 }
                 return execute(jedis, transaction -> {
-                    transaction.set(key, newValueWithTimestamp);
+                    transaction.set(key, newValueWithTimestamp, SetParams.setParams().ex(ttl));
                     return Result.ok();
                 });
             } catch (Exception e) {
@@ -90,7 +91,7 @@ public class RedisCache {
             });
     }
 
-    public Result<Pair<String, Instant>> getKeyValue(String key) {
+    protected Result<String> getKeyValue(String key) {
         return cache(__ -> {
             try (Jedis jedis = getCachePool().getResource()) {
                 String valueWithTimestamp = jedis.get(key);
@@ -99,8 +100,20 @@ public class RedisCache {
                 }
                 String[] parts = valueWithTimestamp.split(",");
                 String value = parts[0];
-                Instant timestamp = Instant.parse(parts[1]);
-                return Result.ok(new Pair<>(value, timestamp));
+                //Instant timestamp = Instant.parse(parts[1]);
+                return Result.ok(value);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return Result.error(INTERNAL_ERROR);
+            }
+        });
+    }
+
+    protected Result<Void> deleteKey(String key) {
+        return cache(__ -> {
+            try (Jedis jedis = getCachePool().getResource()) {
+                jedis.del(key);
+                return Result.ok();
             } catch (Exception e) {
                 e.printStackTrace();
                 return Result.error(INTERNAL_ERROR);
@@ -120,7 +133,7 @@ public class RedisCache {
         }
     }*/
 
-    public Result<Void> addToSet(String key, String value, Instant timestamp) {
+    protected Result<Void> addToSet(String key, String value) {
         return cache(__ -> {
                     try (Jedis jedis = getCachePool().getResource()) {
                         jedis.sadd(key, value);
@@ -143,7 +156,7 @@ public class RedisCache {
         }*/
     }
 
-    public Result<String> removeFromSet(String key, String value) {
+    protected Result<String> removeFromSet(String key, String value) {
         return cache(__ -> {
                     try (Jedis jedis = getCachePool().getResource()) {
                         jedis.srem(key, value);
@@ -166,7 +179,7 @@ public class RedisCache {
         }*/
     }
 
-    public Result<Set<String>> getSetMembers(String key) {
+    protected Result<Set<String>> getSetMembers(String key) {
         return cache(__ -> {
             try (Jedis jedis = getCachePool().getResource()) {
                 Set<String> members = jedis.smembers(key);
@@ -184,11 +197,11 @@ public class RedisCache {
         });
     }
 
-    public Result<Pair<Long, Instant>> incrementCounter(String key) {
+    protected Result<Pair<Long, LocalDateTime>> incrementCounter(String key) {
         return cache(__ -> {
             try (Jedis jedis = getCachePool().getResource()) {
                 long value = jedis.incr(key);
-                return Result.ok(new Pair<>(value, Instant.now()));
+                return Result.ok(new Pair<>(value, LocalDateTime.now()));
             } catch (Exception e) {
                 e.printStackTrace();
                 return Result.error(INTERNAL_ERROR);
@@ -196,11 +209,11 @@ public class RedisCache {
         });
     }
 
-    public Result<Pair<Long, Instant>> decrementCounter(String key) {
+    protected Result<Pair<Long, LocalDateTime>> decrementCounter(String key) {
         return cache(__ -> {
             try (Jedis jedis = getCachePool().getResource()) {
                 long value = jedis.decr(key);
-                return Result.ok(new Pair<>(value, Instant.now()));
+                return Result.ok(new Pair<>(value, LocalDateTime.now()));
             } catch (Exception e) {
                 e.printStackTrace();
                 return Result.error(INTERNAL_ERROR);

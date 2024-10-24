@@ -37,13 +37,13 @@ public class RestUsersResource extends RestResource implements RestUsers {
 	}
 	
 	@Override
-	public User updateUser(String name, String pwd, User user) {
-		return super.resultOrThrow( impl.updateUser(name, pwd, user));
+	public User updateUser(SecurityContext sc, HttpHeaders headers, String name, User user) {
+		return super.resultOrThrow( impl.updateUser(sc, name, user));
 	}
 
 	@Override
-	public User deleteUser(String name, String pwd) {
-		return super.resultOrThrow( impl.deleteUser(name, pwd));
+	public User deleteUser(SecurityContext sc, HttpHeaders headers, String name) {
+		return super.resultOrThrow( impl.deleteUser(sc, name));
 	}
 
 	@Override

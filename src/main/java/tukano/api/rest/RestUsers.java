@@ -30,7 +30,7 @@ public interface RestUsers {
 	@Path("/login")
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	@Produces(MediaType.APPLICATION_JSON)
-	Response login(@FormParam("userId") String userId, @FormParam("pwd") String pwd);
+	Response login(@FormParam(USER_ID) String userId, @FormParam(PWD) String pwd);
 
 
 	@GET
@@ -41,16 +41,18 @@ public interface RestUsers {
 	
 	
 	@PUT
+	@AuthRequired
 	@Path("/{" + USER_ID+ "}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	User updateUser(@PathParam( USER_ID ) String userId, @QueryParam( PWD ) String pwd, User user);
+	User updateUser(@Context SecurityContext sc, @Context HttpHeaders headers, @PathParam( USER_ID ) String userId, User user);
 	
 	
 	@DELETE
+	@AuthRequired
 	@Path("/{" + USER_ID+ "}")
 	@Produces(MediaType.APPLICATION_JSON)
-	User deleteUser(@PathParam(USER_ID) String userId, @QueryParam(PWD) String pwd);
+	User deleteUser(@Context SecurityContext sc, @Context HttpHeaders headers, @PathParam(USER_ID) String userId);
 	
 	
 	@GET

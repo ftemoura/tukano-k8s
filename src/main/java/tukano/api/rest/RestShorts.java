@@ -10,8 +10,12 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.SecurityContext;
 import tukano.api.Short;
+import tukano.api.rest.filters.auth.AuthRequired;
 
 @Path(RestShorts.PATH)
 public interface RestShorts {
@@ -30,13 +34,15 @@ public interface RestShorts {
 	String FOLLOWERS = "/followers";
 	
 	@POST
+	@AuthRequired
 	@Path("/{" + USER_ID + "}")
 	@Produces(MediaType.APPLICATION_JSON)
-	Short createShort(@PathParam(USER_ID) String userId, @QueryParam(PWD) String password);
+	Short createShort(@Context SecurityContext sc, @Context HttpHeaders headers, @PathParam(USER_ID) String userId);
 
 	@DELETE
+	@AuthRequired
 	@Path("/{" + SHORT_ID + "}")
-	void deleteShort(@PathParam(SHORT_ID) String shortId, @QueryParam(PWD) String password);
+	void deleteShort(@Context SecurityContext sc, @Context HttpHeaders headers, @PathParam(SHORT_ID) String shortId);
 
 	@GET
 	@Path("/{" + SHORT_ID + "}" )
@@ -49,32 +55,38 @@ public interface RestShorts {
 	List<String> getShorts(@PathParam(USER_ID) String userId);
 
 	@POST
+	@AuthRequired
 	@Path("/{" + USER_ID1 + "}/{" + USER_ID2 + "}" + FOLLOWERS )
 	@Consumes(MediaType.APPLICATION_JSON)
-	void follow(@PathParam(USER_ID1) String userId1, @PathParam(USER_ID2) String userId2, boolean isFollowing, @QueryParam(PWD) String password);
+	void follow(@Context SecurityContext sc, @Context HttpHeaders headers, @PathParam(USER_ID1) String userId1, @PathParam(USER_ID2) String userId2, boolean isFollowing);
 
 	@GET
+	@AuthRequired
 	@Path("/{" + USER_ID + "}" + FOLLOWERS )
 	@Produces(MediaType.APPLICATION_JSON)
-	List<String> followers(@PathParam(USER_ID) String userId, @QueryParam(PWD) String password);
+	List<String> followers(@Context SecurityContext sc, @Context HttpHeaders headers, @PathParam(USER_ID) String userId);
 
 	@POST
+	@AuthRequired
 	@Path("/{" + SHORT_ID + "}/{" + USER_ID + "}" + LIKES )
 	@Consumes(MediaType.APPLICATION_JSON)
-	void like(@PathParam(SHORT_ID) String shortId, @PathParam(USER_ID) String userId, boolean isLiked,  @QueryParam(PWD) String password);
+	void like(@Context SecurityContext sc, @Context HttpHeaders headers, @PathParam(SHORT_ID) String shortId, @PathParam(USER_ID) String userId, boolean isLiked);
 
 	@GET
+	@AuthRequired
 	@Path("/{" + SHORT_ID + "}" + LIKES )
 	@Produces(MediaType.APPLICATION_JSON)
-	List<String> likes(@PathParam(SHORT_ID) String shortId, @QueryParam(PWD) String password);
+	List<String> likes(@Context SecurityContext sc, @Context HttpHeaders headers, @PathParam(SHORT_ID) String shortId);
 
 	@GET
+	@AuthRequired
 	@Path("/{" + USER_ID + "}" + FEED )
 	@Produces(MediaType.APPLICATION_JSON)
-	List<String> getFeed( @PathParam(USER_ID) String userId, @QueryParam(PWD) String password);
+	List<String> getFeed(@Context SecurityContext sc, @Context HttpHeaders headers, @PathParam(USER_ID) String userId);
 	
 	@DELETE
+	@AuthRequired
 	@Path("/{" + USER_ID + "}" + SHORTS)
-	void deleteAllShorts(@PathParam(USER_ID) String userId, @QueryParam(PWD) String password, @QueryParam(TOKEN) String token);
+	void deleteAllShorts(@Context SecurityContext sc, @Context HttpHeaders headers, @PathParam(USER_ID) String userId, @QueryParam(TOKEN) String token);
 
 }

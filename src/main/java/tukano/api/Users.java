@@ -50,7 +50,7 @@ public interface Users {
 	 *         NOT_FOUND - if no user exists with the provided userId 
 	 *         BAD_REQUEST - otherwise.
 	 */
-	Result<User> updateUser(String userId, String pwd, User user);
+	Result<User> updateUser(SecurityContext sc, String userId, User user);
 	
 	/**
 	 * Deletes the user identified by userId
@@ -62,7 +62,7 @@ public interface Users {
 	 *         NOT_FOUND if no user exists with the provided name
 	 *         BAD_REQUEST otherwise
 	 */
-	Result<User> deleteUser(String userId, String pwd);
+	Result<User> deleteUser(SecurityContext sc, String userId);
 	
 	/**
 	 * Returns the list of users for which the pattern is a substring of the userId, case-insensitive. 

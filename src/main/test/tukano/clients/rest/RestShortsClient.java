@@ -5,6 +5,7 @@ import java.util.List;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.SecurityContext;
 import tukano.api.Result;
 import tukano.api.Short;
 import tukano.api.Shorts;
@@ -16,22 +17,24 @@ public class RestShortsClient extends RestClient implements Shorts{
 		super(serverURI, RestShorts.PATH);
 	}
 
-	public Result<Short> _createShort(String userId, String password) {
+	public Result<Short> _createShort(SecurityContext sc, String userId) {
+		String userToken = sc.getUserPrincipal().getName();
 		return super.toJavaResult(
 				target
 				.path(userId)
-				.queryParam(RestShorts.PWD, password )
 				.request()
 				.accept(MediaType.APPLICATION_JSON)
+						.header("Authorization", "Bearer " + userToken)
 				.post( Entity.json(null)), Short.class);
 	}
 
-	public Result<Void> _deleteShort(String shortId, String password) {
+	public Result<Void> _deleteShort(SecurityContext sc, String shortId) {
+		String userToken = sc.getUserPrincipal().getName();
 		return super.toJavaResult(
 				target
 				.path(shortId)
-				.queryParam(RestShorts.PWD, password )
 				.request()
+						.header("Authorization", "Bearer " + userToken)
 				.delete());
 	}
 
@@ -53,69 +56,75 @@ public class RestShortsClient extends RestClient implements Shorts{
 				.get(), new GenericType<List<String>>() {});
 	}
 
-	public Result<Void> _follow(String userId1, String userId2, boolean isFollowing, String password) {
+	public Result<Void> _follow(SecurityContext sc, String userId1, String userId2, boolean isFollowing) {
+		String userToken = sc.getUserPrincipal().getName();
 		return super.toJavaResult(
 				target
 				.path(userId1)
 				.path(userId2)
 				.path(RestShorts.FOLLOWERS)
-				.queryParam(RestShorts.PWD, password )
 				.request()
+						.header("Authorization", "Bearer " + userToken)
 				.post( Entity.entity(isFollowing, MediaType.APPLICATION_JSON)));
 	}
 
-	public Result<List<String>> _followers(String userId, String password) {
+	public Result<List<String>> _followers(SecurityContext sc, String userId) {
+		String userToken = sc.getUserPrincipal().getName();
 		return super.toJavaResult(
 				target
 				.path(userId)
 				.path(RestShorts.FOLLOWERS)
-				.queryParam(RestShorts.PWD, password )
 				.request()
 				.accept( MediaType.APPLICATION_JSON)
+						.header("Authorization", "Bearer " + userToken)
 				.get(), new GenericType<List<String>>() {});
 	}
 
-	public Result<Void> _like(String shortId, String userId, boolean isLiked, String password) {
+	public Result<Void> _like(SecurityContext sc, String shortId, String userId, boolean isLiked) {
+		String userToken = sc.getUserPrincipal().getName();
 		return super.toJavaResult(
 				target
 				.path(shortId)
 				.path(userId)
 				.path(RestShorts.LIKES)
-				.queryParam(RestShorts.PWD, password )
 				.request()
+						.header("Authorization", "Bearer " + userToken)
 				.post( Entity.entity(isLiked, MediaType.APPLICATION_JSON)));
 	}
 
-	public Result<List<String>> _likes(String shortId, String password) {
+	public Result<List<String>> _likes(SecurityContext sc, String shortId) {
+		String userToken = sc.getUserPrincipal().getName();
 		return super.toJavaResult(
 				target
 				.path(shortId)
 				.path(RestShorts.LIKES)
-				.queryParam(RestShorts.PWD, password )
 				.request()
+						.header("Authorization", "Bearer " + userToken)
 				.accept( MediaType.APPLICATION_JSON)
 				.get(), new GenericType<List<String>>() {});
 	}
 
-	public Result<List<String>> _getFeed(String userId, String password) {
+	public Result<List<String>> _getFeed(SecurityContext sc, String userId) {
+		String userToken = sc.getUserPrincipal().getName();
 		return super.toJavaResult(
 				target
 				.path(userId)
 				.path(RestShorts.FEED)
-				.queryParam(RestShorts.PWD, password )
 				.request()
+						.header("Authorization", "Bearer " + userToken)
 				.accept( MediaType.APPLICATION_JSON)
 				.get(), new GenericType<List<String>>() {});
 	}
 
-	public Result<Void> _deleteAllShorts(String userId, String password, String token) {
+	public Result<Void> _deleteAllShorts(SecurityContext sc, String userId, String token) {
+		String userToken = sc.getUserPrincipal().getName();
 		return super.toJavaResult(
 				target
 				.path(userId)
 				.path(RestShorts.SHORTS)
-				.queryParam(RestShorts.PWD, password )
 				.queryParam(RestShorts.TOKEN, token )
 				.request()
+						.header("Authorization", "Bearer " + userToken)
 				.delete());
 	}
 	
@@ -128,13 +137,13 @@ public class RestShortsClient extends RestClient implements Shorts{
 	}
 		
 	@Override
-	public Result<Short> createShort(String userId, String password) {
-		return super.reTry( () -> _createShort(userId, password));
+	public Result<Short> createShort(SecurityContext sc, String userId) {
+		return super.reTry( () -> _createShort(sc, userId));
 	}
 
 	@Override
-	public Result<Void> deleteShort(String shortId, String password) {
-		return super.reTry( () -> _deleteShort(shortId, password));
+	public Result<Void> deleteShort(SecurityContext sc, String shortId) {
+		return super.reTry( () -> _deleteShort(sc, shortId));
 	}
 
 	@Override
@@ -148,32 +157,32 @@ public class RestShortsClient extends RestClient implements Shorts{
 	}
 
 	@Override
-	public Result<Void> follow(String userId1, String userId2, boolean isFollowing, String password) {
-		return super.reTry( () -> _follow(userId1, userId2, isFollowing, password));
+	public Result<Void> follow(SecurityContext sc, String userId1, String userId2, boolean isFollowing) {
+		return super.reTry( () -> _follow(sc, userId1, userId2, isFollowing));
 	}
 
 	@Override
-	public Result<List<String>> followers(String userId, String password) {
-		return super.reTry( () -> _followers(userId, password));
+	public Result<List<String>> followers(SecurityContext sc, String userId) {
+		return super.reTry( () -> _followers(sc, userId));
 	}
 
 	@Override
-	public Result<Void> like(String shortId, String userId, boolean isLiked, String password) {
-		return super.reTry( () -> _like(shortId, userId, isLiked, password));
+	public Result<Void> like(SecurityContext sc, String shortId, String userId, boolean isLiked) {
+		return super.reTry( () -> _like(sc, shortId, userId, isLiked));
 	}
 
 	@Override
-	public Result<List<String>> likes(String shortId, String password) {
-		return super.reTry( () -> _likes(shortId, password));
+	public Result<List<String>> likes(SecurityContext sc, String shortId) {
+		return super.reTry( () -> _likes(sc, shortId));
 	}
 
 	@Override
-	public Result<List<String>> getFeed(String userId, String password) {
-		return super.reTry( () -> _getFeed(userId, password));
+	public Result<List<String>> getFeed(SecurityContext sc, String userId) {
+		return super.reTry( () -> _getFeed(sc, userId));
 	}
 
 	@Override
-	public Result<Void> deleteAllShorts(String userId, String password, String token) {
-		return super.reTry( () -> _deleteAllShorts(userId, password, token));
+	public Result<Void> deleteAllShorts(SecurityContext sc, String userId, String token) {
+		return super.reTry( () -> _deleteAllShorts(sc, userId, token));
 	}
 }

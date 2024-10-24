@@ -1,10 +1,20 @@
 package tukano.api;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.ser.DurationSerializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 public class User {
+
+	@UpdateTimestamp
+	@JsonSerialize(using = LocalDateTimeSerializer.class)
+	private LocalDateTime lastModified;
 	
 	@Id
 	private String userId;
@@ -61,10 +71,14 @@ public class User {
 	public String displayName() {
 		return displayName;
 	}
+
+	public LocalDateTime getLastModified() {
+		return lastModified;
+	}
 	
 	@Override
 	public String toString() {
-		return "User [userId=" + userId + ", pwd=" + pwd + ", email=" + email + ", displayName=" + displayName + "]";
+		return "User [userId=" + userId + ", pwd=" + pwd + ", email=" + email + ", displayName=" + displayName + ", " + lastModified + "]";
 	}
 	
 	public User copyWithoutPassword() {

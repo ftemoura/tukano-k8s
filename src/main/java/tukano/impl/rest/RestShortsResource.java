@@ -3,6 +3,9 @@ package tukano.impl.rest;
 import java.util.List;
 
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.SecurityContext;
 import tukano.api.Short;
 import tukano.api.Shorts;
 import tukano.api.rest.RestShorts;
@@ -14,13 +17,13 @@ public class RestShortsResource extends RestResource implements RestShorts {
 	static final Shorts impl = JavaShorts.getInstance();
 		
 	@Override
-	public Short createShort(String userId, String password) {
-		return super.resultOrThrow( impl.createShort(userId, password));
+	public Short createShort(SecurityContext sc, HttpHeaders headers, String userId) {
+		return super.resultOrThrow( impl.createShort(sc, userId));
 	}
 
 	@Override
-	public void deleteShort(String shortId, String password) {
-		super.resultOrThrow( impl.deleteShort(shortId, password));
+	public void deleteShort(SecurityContext sc, HttpHeaders headers, String shortId) {
+		super.resultOrThrow( impl.deleteShort(sc, shortId));
 	}
 
 	@Override
@@ -33,32 +36,32 @@ public class RestShortsResource extends RestResource implements RestShorts {
 	}
 
 	@Override
-	public void follow(String userId1, String userId2, boolean isFollowing, String password) {
-		super.resultOrThrow( impl.follow(userId1, userId2, isFollowing, password));
+	public void follow(SecurityContext sc, HttpHeaders headers, String userId1, String userId2, boolean isFollowing) {
+		super.resultOrThrow( impl.follow(sc, userId1, userId2, isFollowing));
 	}
 
 	@Override
-	public List<String> followers(String userId, String password) {
-		return super.resultOrThrow( impl.followers(userId, password));
+	public List<String> followers(SecurityContext sc, HttpHeaders headers, String userId) {
+		return super.resultOrThrow( impl.followers(sc, userId));
 	}
 
 	@Override
-	public void like(String shortId, String userId, boolean isLiked, String password) {
-		super.resultOrThrow( impl.like(shortId, userId, isLiked, password));
+	public void like(SecurityContext sc, HttpHeaders headers, String shortId, String userId, boolean isLiked) {
+		super.resultOrThrow( impl.like(sc, shortId, userId, isLiked));
 	}
 
 	@Override
-	public List<String> likes(String shortId, String password) {
-		return super.resultOrThrow( impl.likes(shortId, password));
+	public List<String> likes(SecurityContext sc, HttpHeaders headers, String shortId) {
+		return super.resultOrThrow( impl.likes(sc, shortId));
 	}
 
 	@Override
-	public List<String> getFeed(String userId, String password) {
-		return super.resultOrThrow( impl.getFeed(userId, password));
+	public List<String> getFeed(SecurityContext sc, HttpHeaders headers, String userId) {
+		return super.resultOrThrow( impl.getFeed(sc, userId));
 	}
 
 	@Override
-	public void deleteAllShorts(String userId, String password, String token) {
-		super.resultOrThrow( impl.deleteAllShorts(userId, password, token));
+	public void deleteAllShorts(SecurityContext sc, HttpHeaders headers, String userId, String token) {
+		super.resultOrThrow( impl.deleteAllShorts(sc, userId, token));
 	}	
 }

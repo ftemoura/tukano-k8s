@@ -1,5 +1,9 @@
 package tukano.api;
 
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.SecurityContext;
+
 import java.util.List;
 
 /**
@@ -28,7 +32,7 @@ public interface Shorts {
 	 * FORBIDDEN, if the password is not correct;
 	 * BAD_REQUEST, otherwise.
 	 */
-	Result<Short> createShort(String userId, String password);
+	Result<Short> createShort(SecurityContext sc, String userId);
 
 	/**
 	 * Deletes a given Short.
@@ -38,7 +42,7 @@ public interface Shorts {
 	 * 	NOT_FOUND if shortId does not match an existing short
 	 * 	FORBIDDEN, if the password is not correct;
 	 */
-	Result<Void> deleteShort(String shortId, String password);
+	Result<Void> deleteShort(SecurityContext sc, String shortId);
 	
 	
 	/**
@@ -72,7 +76,7 @@ public interface Shorts {
 	 * 	NOT_FOUND if any of the users does not exist
 	 *  FORBIDDEN if the password is incorrect
 	 */
-	Result<Void> follow(String userId1, String userId2, boolean isFollowing, String password);	
+	Result<Void> follow(SecurityContext sc, String userId1, String userId2, boolean isFollowing);
 
 	/**
 	 * Retrieves the lost of users following a given user
@@ -82,7 +86,7 @@ public interface Shorts {
 	 * NOT_FOUND if the user does not exists
 	 * FORBIDDEN if the password is incorrect
 	 */
-	Result<List<String>> followers(String userId, String password);
+	Result<List<String>> followers(SecurityContext sc, String userId);
 	/**
 	 * Adds or removes a like to a short
 	 * 
@@ -95,7 +99,7 @@ public interface Shorts {
 	 *  FORBIDDEN if the password of the user is incorrect
 	 *  BAD_REQUEST, otherwise
 	 */
-	Result<Void> like(String shortId, String userId, boolean isLiked, String password);
+	Result<Void> like(SecurityContext sc, String shortId, String userId, boolean isLiked);
 	
 
 	/**
@@ -107,7 +111,7 @@ public interface Shorts {
 	 * NOT_FOUND if there is no Short with the given shortId
 	 * FORBIDDEN if the password is incorrect
 	 */
-	Result<List<String>> likes(String shortId, String password);
+	Result<List<String>> likes(SecurityContext sc, String shortId);
 
 
 	/**
@@ -120,7 +124,7 @@ public interface Shorts {
 	 * 	NOT_FOUND if the user does not exists
 	 *  FORBIDDEN if the password is incorrect
 	 */
-	Result<List<String>> getFeed(String userId, String password);
+	Result<List<String>> getFeed(SecurityContext sc, String userId);
 
-	Result<Void> deleteAllShorts(String userId, String password, String token);
+	Result<Void> deleteAllShorts(SecurityContext sc, String userId, String token);
 }
