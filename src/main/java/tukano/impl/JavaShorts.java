@@ -255,15 +255,15 @@ public class JavaShorts implements Shorts {
 	}
 	
 	@Override
-	public Result<Void> deleteAllShorts(SecurityContext sc, String userId, String token) {
+	public Result<Void> deleteAllShorts(String userId, String token) {
 		Log.info(() -> format("deleteAllShorts : userId = %s, token = %s\n", userId, token));
 
 		// TODO fix tokens
 		//if( ! Token.isValid( token, "shorts",userId ) )
 		//	return error(FORBIDDEN);
-		Result<User> user = okUser(userId, sc);
+		/*Result<User> user = okUser(userId, sc);
 		if(!user.isOK()) //TODO ele nao tinha esta verificaçao
-			return error(user.error());
+			return error(user.error());*/
 
 		return DB.transaction( (hibernate) -> {
 						

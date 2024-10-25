@@ -17,12 +17,12 @@ public class RestShortsResource extends RestResource implements RestShorts {
 	static final Shorts impl = JavaShorts.getInstance();
 		
 	@Override
-	public Short createShort(SecurityContext sc, HttpHeaders headers, String userId) {
+	public Short createShort(SecurityContext sc, String userId) {
 		return super.resultOrThrow( impl.createShort(sc, userId));
 	}
 
 	@Override
-	public void deleteShort(SecurityContext sc, HttpHeaders headers, String shortId) {
+	public void deleteShort(SecurityContext sc, String shortId) {
 		super.resultOrThrow( impl.deleteShort(sc, shortId));
 	}
 
@@ -36,32 +36,32 @@ public class RestShortsResource extends RestResource implements RestShorts {
 	}
 
 	@Override
-	public void follow(SecurityContext sc, HttpHeaders headers, String userId1, String userId2, boolean isFollowing) {
+	public void follow(SecurityContext sc, String userId1, String userId2, boolean isFollowing) {
 		super.resultOrThrow( impl.follow(sc, userId1, userId2, isFollowing));
 	}
 
 	@Override
-	public List<String> followers(SecurityContext sc, HttpHeaders headers, String userId) {
+	public List<String> followers(SecurityContext sc, String userId) {
 		return super.resultOrThrow( impl.followers(sc, userId));
 	}
 
 	@Override
-	public void like(SecurityContext sc, HttpHeaders headers, String shortId, String userId, boolean isLiked) {
+	public void like(SecurityContext sc, String shortId, String userId, boolean isLiked) {
 		super.resultOrThrow( impl.like(sc, shortId, userId, isLiked));
 	}
 
 	@Override
-	public List<String> likes(SecurityContext sc, HttpHeaders headers, String shortId) {
+	public List<String> likes(SecurityContext sc, String shortId) {
 		return super.resultOrThrow( impl.likes(sc, shortId));
 	}
 
 	@Override
-	public List<String> getFeed(SecurityContext sc, HttpHeaders headers, String userId) {
+	public List<String> getFeed(SecurityContext sc, String userId) {
 		return super.resultOrThrow( impl.getFeed(sc, userId));
 	}
 
 	@Override
-	public void deleteAllShorts(SecurityContext sc, HttpHeaders headers, String userId, String token) {
-		super.resultOrThrow( impl.deleteAllShorts(sc, userId, token));
+	public void deleteAllShorts(String userId, String token) {
+		super.resultOrThrow( impl.deleteAllShorts(userId, token));
 	}	
 }

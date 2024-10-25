@@ -130,7 +130,7 @@ public class JavaUsers implements Users {
 			// Delete user shorts and related info asynchronously in a separate thread
 			Executors.defaultThreadFactory().newThread( () -> {
 				//TODO fix tokens
-				JavaShorts.getInstance().deleteAllShorts(sc, userId, /*Token.get(userId)*/ Token.get(Token.Service.BLOBS, userId));
+				JavaShorts.getInstance().deleteAllShorts(userId, /*Token.get(userId)*/ Token.get(Token.Service.BLOBS, userId));
 				JavaBlobs.getInstance().deleteAllBlobs(userId, /*Token.get(userId)*/ Token.get(Token.Service.BLOBS, userId));
 			}).start();
 			
