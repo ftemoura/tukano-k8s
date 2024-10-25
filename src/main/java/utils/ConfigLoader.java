@@ -43,6 +43,10 @@ public class ConfigLoader {
         return properties.getProperty("azure.redisKey");
     }
 
+    public int getRedisPort() {
+        return Integer.parseInt(properties.getProperty("azure.redisPort"));
+    }
+
     public boolean isCacheEnabled() {
         return Boolean.parseBoolean(properties.getProperty("azure.cacheEnabled"));
     }
