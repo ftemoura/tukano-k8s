@@ -1,11 +1,14 @@
 package tukano.impl.cache;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.Transaction;
 import redis.clients.jedis.params.SetParams;
 import tukano.api.Result;
+import tukano.impl.JavaUsers;
 import utils.ConfigLoader;
 import utils.Pair;
 
@@ -20,7 +23,10 @@ public class RedisCache {
 
     private static final boolean CACHE_ENABLED = ConfigLoader.getInstance().isCacheEnabled();
     private static final int REDIS_TIMEOUT = 2000;
-    private static final boolean REDIS_USE_TLS = true;
+    private static final boolean REDIS_USE_TLS = false;
+    private static final Logger log = LoggerFactory.getLogger(RedisCache.class);
+
+    private static java.util.logging.Logger Log = java.util.logging.Logger.getLogger(RedisCache.class.getName());
 
     private static JedisPool instance;
 
@@ -39,7 +45,7 @@ public class RedisCache {
         poolConfig.setTestWhileIdle(true);
         poolConfig.setNumTestsPerEvictionRun(3);
         poolConfig.setBlockWhenExhausted(true);
-        instance = new JedisPool(poolConfig, redisHostname, redisPort, REDIS_TIMEOUT, false);
+        instance = new JedisPool(poolConfig, redisHostname, redisPort, REDIS_TIMEOUT, REDIS_USE_TLS);
         return instance;
     }
 
@@ -75,9 +81,8 @@ public class RedisCache {
                 return execute(jedis, transaction -> {
                     String newValueWithTimestamp = timestamp.toString() + "," + value;
                     if (existingValueWithTimestamp != null) {
-                        String[] parts = existingValueWithTimestamp.split(",");
+                        String[] parts = existingValueWithTimestamp.split(",", 2);
                         LocalDateTime existingTimestamp = LocalDateTime.parse(parts[0]);
-
                         if (!timestamp.isAfter(existingTimestamp))
                             throw new RedisTimestampTransactionException("Conflict: New timestamp is not after the current timestamp.");
                     }
@@ -98,7 +103,7 @@ public class RedisCache {
                 if (valueWithTimestamp == null) {
                     return Result.error(Result.ErrorCode.NOT_FOUND);
                 }
-                String[] parts = valueWithTimestamp.split(",");
+                String[] parts = valueWithTimestamp.split(",", 2);
                 String value = parts[1];
                 return Result.ok(value);
             } catch (Exception e) {

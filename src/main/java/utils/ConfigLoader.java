@@ -43,6 +43,10 @@ public class ConfigLoader {
         return properties.getProperty("azure.redisKey");
     }
 
+    public String getHibernateConfigPath() {
+        return properties.getProperty("hibernateConfig");
+    }
+
     public int getRedisPort() {
         return Integer.parseInt(properties.getProperty("azure.redisPort"));
     }

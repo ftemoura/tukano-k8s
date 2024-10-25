@@ -21,10 +21,8 @@ import tukano.api.Result.ErrorCode;
  * @param <Session>
  */
 public class Hibernate {
-//	private static Logger Log = Logger.getLogger(Hibernate.class.getName());
 
-	private static final String HIBERNATE_CFG_FILE = "webapps/tukano/WEB-INF/hibernate.cfg.xml";
-	//private static final String HIBERNATE_CFG_FILE = "hibernate.cfg.xml";
+	private static final String HIBERNATE_CFG_FILE = ConfigLoader.getInstance().getHibernateConfigPath();
 	private SessionFactory sessionFactory;
 	private static Hibernate instance;
 
@@ -39,7 +37,7 @@ public class Hibernate {
 
 	/**
 	 * Returns the Hibernate instance, initializing if necessary. Requires a
-	 * configuration file (hibernate.cfg.xml)
+	 * configuration file
 	 * 
 	 * @return
 	 */

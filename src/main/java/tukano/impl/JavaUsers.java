@@ -1,12 +1,11 @@
 package tukano.impl;
 
 import static java.lang.String.format;
+import static tukano.api.Result.ErrorCode.*;
 import static tukano.api.Result.error;
 import static tukano.api.Result.errorOrResult;
 import static tukano.api.Result.errorOrValue;
 import static tukano.api.Result.ok;
-import static tukano.api.Result.ErrorCode.BAD_REQUEST;
-import static tukano.api.Result.ErrorCode.FORBIDDEN;
 
 import java.time.Instant;
 import java.time.temporal.TemporalUnit;
@@ -102,7 +101,11 @@ public class JavaUsers implements Users {
 		if (badUpdateUserInfo(userId, other))
 			return error(BAD_REQUEST);
 
-		Result<User> bdRes = errorOrResult( validatedUserOrError(DB.getOne( userId, User.class), sc), user -> DB.updateOne( user.updateFrom(other)));
+		// authorization: userId requested matches the requester token
+		if( !userId.equals(sc.getUserPrincipal().getName()))
+			return error(FORBIDDEN);
+
+		Result<User> bdRes = errorOrResult( DB.getOne( userId, User.class), user -> DB.updateOne( user.updateFrom(other)));
 
 		if(bdRes.isOK())
 			Executors.defaultThreadFactory().newThread(() -> {
@@ -118,7 +121,11 @@ public class JavaUsers implements Users {
 		if (userId == null || sc == null )
 			return error(BAD_REQUEST);
 
-		Result<User> dbRes = errorOrResult( validatedUserOrError(DB.getOne( userId, User.class), sc), user -> {
+		// authorization: userId requested matches the requester token
+		if( !userId.equals(sc.getUserPrincipal().getName()))
+			return error(FORBIDDEN);
+
+		Result<User> dbRes = errorOrResult( DB.getOne( userId, User.class), user -> {
 
 			// Delete user shorts and related info asynchronously in a separate thread
 			Executors.defaultThreadFactory().newThread( () -> {
@@ -137,7 +144,7 @@ public class JavaUsers implements Users {
 		return dbRes;
 	}
 
-	@Override//TODO compensa?
+	@Override//TODO compensa cache?
 	public Result<List<User>> searchUsers(String pattern) {
 		Log.info( () -> format("searchUsers : patterns = %s\n", pattern));
 
@@ -150,21 +157,14 @@ public class JavaUsers implements Users {
 		return ok(hits);
 	}
 
-	
-	private Result<User> validatedUserOrError( Result<User> res, SecurityContext sc ) {
-		if (res.isOK()) {
-			String userId = res.value().userId();
-			if (!userId.equals(sc.getUserPrincipal().getName()))
-				return error(FORBIDDEN);
-		}
-		return res;
-	}
-
 	private Result<User> validatedUserOrError( Result<User> res, String pwd ) {
 		if (res.isOK())
 			return res.value().pwd().equals(pwd) ? res : error(FORBIDDEN);
+		else if (res.error() == NOT_FOUND)
+			return error(FORBIDDEN);
 		else
 			return res;
+
 	}
 	
 	private boolean badUserInfo( User user) {
