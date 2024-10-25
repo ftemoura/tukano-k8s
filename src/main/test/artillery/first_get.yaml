@@ -1,12 +1,23 @@
 config:
-    target: http://127.0.0.1:8080/tukano/rest
-    phases:
-        - name: simple_get
-          duration: 1 # how long the test will run for, in seconds
-          arrivalRate: 1 # number of arrivals per second.
+  target: http://127.0.0.1:8080/tukano/rest
+  phases:
+    - name: simple_get
+      duration: 1 # How long the test will run for, in seconds
+      arrivalRate: 1 # Number of arrivals per second
 
 scenarios:
-    - name: TuKanoHome
-      flow:
-        - get:
-            url: /users/kgallagher?pwd=easypass
+  - name: TuKanoHome
+    flow:
+      - post: # This is for the login request
+          url: /users/login
+          headers:
+            Content-Type: application/x-www-form-urlencoded # Explicitly set the content type
+          body: "userId=kgallagher&pwd=easypass" # Manually constructing the body
+          capture:
+            cookies: cookies # Capture cookies to store them
+            as: cookies
+
+      - get: # This is to fetch user data after login
+          url: /users/kgallagher # Ensure the URL is correct
+          headers:
+            Cookie: "{{ cookies }}" # Use captured cookies here

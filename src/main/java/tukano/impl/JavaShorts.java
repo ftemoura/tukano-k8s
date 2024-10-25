@@ -13,6 +13,7 @@ import static utils.DB.getOne;
 import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 import jakarta.ws.rs.core.Context;
@@ -60,10 +61,13 @@ public class JavaShorts implements Shorts {
 			return errorOrValue(DB.insertOne(shrt), s -> s.copyWithLikes_And_Token(0));
 		});
 
-		if(!result.isOK())
-			return error(result.error());
-		Short shortResult = result.value();
-		this.cache.cacheShort(shortResult, shortResult.getLastModified());
+		if(result.isOK()) {
+			Executors.defaultThreadFactory().newThread(() -> {
+				Short shortResult = result.value();
+				this.cache.cacheShort(shortResult, shortResult.getLastModified());
+				this.cache.invalidateFeed(userId);
+			}).start();
+		}
 		return result;
 	}
 
@@ -81,8 +85,10 @@ public class JavaShorts implements Shorts {
 		var likes = DB.sql(query, Long.class);
 		Result<Short> bdRes = errorOrValue( getOne(shortId, Short.class), shrt -> shrt.copyWithLikes_And_Token( likes.get(0)));
 		if(bdRes.isOK()) {
-			Short shrt = bdRes.value();
-			this.cache.cacheShort(shrt, shrt.getLastModified());
+			Executors.defaultThreadFactory().newThread(() -> {
+				Short shrt = bdRes.value();
+				this.cache.cacheShort(shrt, shrt.getLastModified());
+			}).start();
 		}
 		return bdRes;
 	}
@@ -101,14 +107,16 @@ public class JavaShorts implements Shorts {
 					
 					var query = format("DELETE Likes l WHERE l.shortId = '%s'", shortId);
 					hibernate.createNativeQuery( query, Likes.class).executeUpdate();
-					// TODO fix tokens
-					JavaBlobs.getInstance().delete(shrt.getBlobUrl(), /*Token.get()*/ Token.get(Token.Service.BLOBS, shrt.getBlobUrl()) );
+					JavaBlobs.getInstance().delete(shrt.getBlobUrl(), Token.get(Token.Service.BLOBS, shrt.getBlobUrl()) );
 				});
 			});	
 		});
 
 		if (bdRes.isOK())
-			this.cache.deleteShort(shortId);
+			Executors.defaultThreadFactory().newThread(() -> {
+				this.cache.deleteShort(shortId);
+			}).start();
+
 		return bdRes;
 	}
 
@@ -116,26 +124,55 @@ public class JavaShorts implements Shorts {
 	public Result<List<String>> getShorts(String userId) {
 		Log.info(() -> format("getShorts : userId = %s\n", userId));
 
+		Result<List<String>> cacheRes = this.cache.getShorts(userId);
+		if(cacheRes.isOK())
+			return cacheRes;
+
 		var query = format("SELECT s.shortId FROM Short s WHERE s.ownerId = '%s'", userId);
-		return errorOrValue( okUser(userId), DB.sql( query, String.class));
+		Result<List<String>> bdRes = errorOrValue( okUser(userId), DB.sql( query, String.class));
+		if (bdRes.isOK()) {
+			Executors.defaultThreadFactory().newThread(() -> {
+				this.cache.cacheShorts(userId, bdRes.value());
+			}).start();
+		}
+		return bdRes;
 	}
 
 	@Override
 	public Result<Void> follow(SecurityContext sc, String userId1, String userId2, boolean isFollowing) {
 		Log.info(() -> format("follow : userId1 = %s, userId2 = %s, isFollowing = %s\n", userId1, userId2, isFollowing));
 
-		return errorOrResult( okUser(userId1, sc), user -> {
+		Result<Void> bdRes = errorOrResult( okUser(userId1, sc), user -> {
 			var f = new Following(userId1, userId2);
 			return errorOrVoid( okUser( userId2), isFollowing ? DB.insertOne( f ) : DB.deleteOne( f ));	
-		});			
+		});
+
+		if(bdRes.isOK()) {
+			Executors.defaultThreadFactory().newThread(() -> {
+				this.cache.invalidateFollowers(userId2);
+				this.cache.invalidateFeed(userId1);
+			}).start();
+		}
+		return bdRes;
 	}
 
 	@Override
 	public Result<List<String>> followers(SecurityContext sc, String userId) {
 		Log.info(() -> format("followers : userId = %s\n", userId));
 
+		Result<List<String>> cacheRes = this.cache.getFollowers(userId);
+		if (cacheRes.isOK())
+			return cacheRes;
+
 		var query = format("SELECT f.follower FROM Following f WHERE f.followee = '%s'", userId);		
-		return errorOrValue( okUser(userId, sc), DB.sql(query, String.class));
+		Result<List<String>> bdRes = errorOrValue( okUser(userId, sc), DB.sql(query, String.class));
+
+		if (bdRes.isOK()) {
+			Executors.defaultThreadFactory().newThread(() -> {
+				this.cache.cacheFollowers(userId, bdRes.value());
+			}).start();
+		}
+		return bdRes;
 	}
 
 	@Override
@@ -143,27 +180,45 @@ public class JavaShorts implements Shorts {
 		Log.info(() -> format("like : shortId = %s, userId = %s, isLiked = %s\n", shortId, userId, isLiked));
 
 		
-		return errorOrResult( getShort(shortId), shrt -> {
+		Result<Void> bdRes = errorOrResult( getShort(shortId), shrt -> {
 			var l = new Likes(userId, shortId, shrt.getOwnerId());
 			return errorOrVoid( okUser( userId, sc), isLiked ? DB.insertOne( l ) : DB.deleteOne( l ));
 		});
+
+		if (bdRes.isOK()) {
+			Executors.defaultThreadFactory().newThread(() -> {
+				this.cache.invalidateLikes(shortId);
+			}).start();
+		}
+		return bdRes;
 	}
 
 	@Override
 	public Result<List<String>> likes(SecurityContext sc, String shortId) {
 		Log.info(() -> format("likes : shortId = %s\n", shortId));
 
-		return errorOrResult( getShort(shortId), shrt -> {
-			
-			var query = format("SELECT l.userId FROM Likes l WHERE l.shortId = '%s'", shortId);					
-			
+		Result<List<String>> cacheRes = this.cache.getLikes(shortId);
+		if (cacheRes.isOK())
+			return cacheRes;
+
+		Result<List<String>> bdRes = errorOrResult( getShort(shortId), shrt -> {
+			var query = format("SELECT l.userId FROM Likes l WHERE l.shortId = '%s'", shortId);
 			return errorOrValue( okUser( shrt.getOwnerId(), sc ), DB.sql(query, String.class));
 		});
+		if (bdRes.isOK()) {
+			Executors.defaultThreadFactory().newThread(() -> {
+				this.cache.cacheLikes(shortId, bdRes.value());
+			}).start();
+		}
+		return bdRes;
 	}
 
 	@Override
 	public Result<List<String>> getFeed(SecurityContext sc, String userId) {
 		Log.info(() -> format("getFeed : userId = %s\n", userId));
+		Result<List<String>> cacheRes = this.cache.getFeed(userId);
+		if (cacheRes.isOK())
+			return cacheRes;
 
 		final var QUERY_FMT = """
 				SELECT s.shortId, s.timestamp FROM Short s WHERE	s.ownerId = '%s'				
@@ -173,7 +228,14 @@ public class JavaShorts implements Shorts {
 						f.followee = s.ownerId AND f.follower = '%s' 
 				ORDER BY s.timestamp DESC""";
 
-		return errorOrValue( okUser( userId, sc), DB.sql( format(QUERY_FMT, userId, userId), String.class));
+		Result<List<String>> bdRes = errorOrValue( okUser( userId, sc), DB.sql( format(QUERY_FMT, userId, userId), String.class));
+
+		if (bdRes.isOK()) {
+			Executors.defaultThreadFactory().newThread(() -> {
+				this.cache.cacheFeed(userId, bdRes.value());
+			}).start();
+		}
+		return bdRes;
 	}
 		
 	protected Result<User> okUser( String userId, String pwd) {

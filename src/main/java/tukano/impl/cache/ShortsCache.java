@@ -16,6 +16,23 @@ public interface ShortsCache {
 
     Result<List<String>> getShorts(String userId);
 
-    Result<Void> cacheShorts(String userId);
+    Result<Void> cacheShorts(String userId, List<String> shortIds);
 
+    Result<List<String>> getFollowers(String userId);
+
+    Result<Void> cacheFollowers(String userId, List<String> followers);
+
+    Result<List<String>> getLikes(String shortId);
+
+    Result<Void> cacheLikes(String shortId, List<String> likes);
+
+    Result<List<String>> getFeed(String userId);
+
+    Result<Void> cacheFeed(String userId, List<String> feed);
+
+    Result<Void> invalidateLikes(String shortId);
+
+    Result<Void> invalidateFollowers(String userId);
+
+    Result<Void> invalidateFeed(String userId);
 }

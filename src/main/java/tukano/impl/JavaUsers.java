@@ -50,7 +50,9 @@ public class JavaUsers implements Users {
 
 		Result<String> bdRes = errorOrValue( DB.insertOne( user), user.getUserId() );
 		if(bdRes.isOK())
-			cache.cacheUser( user);
+			Executors.defaultThreadFactory().newThread(() -> {
+				cache.cacheUser( user);
+			}).start();
 		return bdRes;
 	}
 
@@ -87,7 +89,9 @@ public class JavaUsers implements Users {
 			return cacheRes;
 		Result<User> bdRes = DB.getOne( userId, User.class);
 		if(bdRes.isOK())
-			cache.cacheUser( bdRes.value());
+			Executors.defaultThreadFactory().newThread(() -> {
+				cache.cacheUser( bdRes.value());
+			}).start();
 		return bdRes;
 	}
 
@@ -99,8 +103,11 @@ public class JavaUsers implements Users {
 			return error(BAD_REQUEST);
 
 		Result<User> bdRes = errorOrResult( validatedUserOrError(DB.getOne( userId, User.class), sc), user -> DB.updateOne( user.updateFrom(other)));
+
 		if(bdRes.isOK())
-			cache.cacheUser( bdRes.value());
+			Executors.defaultThreadFactory().newThread(() -> {
+				cache.cacheUser( bdRes.value());
+			}).start();
 		return bdRes;
 	}
 
@@ -124,11 +131,13 @@ public class JavaUsers implements Users {
 		});
 
 		if(dbRes.isOK())
-			cache.deleteUser( userId);
+			Executors.defaultThreadFactory().newThread(() -> {
+				cache.deleteUser( userId);
+			}).start();
 		return dbRes;
 	}
 
-	@Override
+	@Override//TODO compensa?
 	public Result<List<User>> searchUsers(String pattern) {
 		Log.info( () -> format("searchUsers : patterns = %s\n", pattern));
 

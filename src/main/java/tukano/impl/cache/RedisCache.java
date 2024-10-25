@@ -72,15 +72,15 @@ public class RedisCache {
             try (Jedis jedis = getCachePool().getResource()) {
                 jedis.watch(key);
                 String existingValueWithTimestamp = jedis.get(key);
-                String newValueWithTimestamp = value + "," + timestamp.toString();
-                if (existingValueWithTimestamp != null) {
-                    String[] parts = existingValueWithTimestamp.split(",");
-                    LocalDateTime existingTimestamp = LocalDateTime.parse(parts[1]);
-
-                    if (!timestamp.isAfter(existingTimestamp))
-                        throw new RedisTimestampTransactionException("Conflict: New timestamp is not after the current timestamp.");
-                }
                 return execute(jedis, transaction -> {
+                    String newValueWithTimestamp = value + "," + timestamp.toString();
+                    if (existingValueWithTimestamp != null) {
+                        String[] parts = existingValueWithTimestamp.split(",");
+                        LocalDateTime existingTimestamp = LocalDateTime.parse(parts[1]);
+
+                        if (!timestamp.isAfter(existingTimestamp))
+                            throw new RedisTimestampTransactionException("Conflict: New timestamp is not after the current timestamp.");
+                    }
                     transaction.set(key, newValueWithTimestamp, SetParams.setParams().ex(ttl));
                     return Result.ok();
                 });
@@ -100,7 +100,6 @@ public class RedisCache {
                 }
                 String[] parts = valueWithTimestamp.split(",");
                 String value = parts[0];
-                //Instant timestamp = Instant.parse(parts[1]);
                 return Result.ok(value);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -121,39 +120,21 @@ public class RedisCache {
         });
     }
 
-    /*private void checkTimestamp(String key, Instant timestamp, Jedis jedis) {
-        jedis.watch(key, key + ":meta");
-        String currentTimestampString = jedis.hget(key + ":meta", "timestamp");
-
-        if (currentTimestampString != null) {
-            Instant currentTimestamp = Instant.parse(currentTimestampString);
-            if (!timestamp.isAfter(currentTimestamp)) {
-                throw new RedisTimestampTransactionException("Conflict: New timestamp is not after the current timestamp.");
-            }
-        }
-    }*/
-
-    protected Result<Void> addToSet(String key, String value) {
+    protected Result<Void> createSet(String key, int ttl, List<String> values) {
         return cache(__ -> {
-                    try (Jedis jedis = getCachePool().getResource()) {
-                        jedis.sadd(key, value);
-                        return Result.ok();
+                    try (Jedis jedis = getCachePool().getResource()){
+                        jedis.watch(key);
+                        return execute(jedis, transaction -> {
+                            transaction.del(key);
+                            values.forEach(value -> transaction.sadd(key, value));
+                            transaction.expire(key, ttl);
+                            return Result.ok();
+                        });
                     } catch (Exception e) {
                         e.printStackTrace();
                         return Result.error(INTERNAL_ERROR);
                     }
                 });
-        /*try (Jedis jedis = getCachePool().getResource()) {
-            checkTimestamp(key, timestamp, jedis);
-
-            return execute(jedis, transaction -> {
-                transaction.sadd(key, value);
-                transaction.hset(key + ":meta", "timestamp", timestamp.toString());
-                return Result.ok();
-            });
-        } catch (Exception e) {
-            return Result.error(INTERNAL_ERROR);
-        }*/
     }
 
     protected Result<String> removeFromSet(String key, String value) {
@@ -166,17 +147,6 @@ public class RedisCache {
                         return Result.error(INTERNAL_ERROR);
                     }
                 });
-        /*try (Jedis jedis = getCachePool().getResource()) {
-            checkTimestamp(key, timestamp, jedis);
-
-            return execute(jedis, transaction -> {
-                transaction.srem(key, value);
-                transaction.hset(key + ":meta", "timestamp", timestamp.toString());
-                return Result.ok(value);
-            });
-        } catch (Exception e) {
-            return Result.error(INTERNAL_ERROR);
-        }*/
     }
 
     protected Result<Set<String>> getSetMembers(String key) {
@@ -186,9 +156,6 @@ public class RedisCache {
                 if (members.isEmpty()) {
                     return Result.error(Result.ErrorCode.NOT_FOUND);
                 }
-
-                //String timestampString = jedis.hget(key + ":meta", "timestamp");
-                //Instant timestamp = Instant.parse(timestampString);
                 return Result.ok(members);
             } catch (Exception e) {
                 e.printStackTrace();
