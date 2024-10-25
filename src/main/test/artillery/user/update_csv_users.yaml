@@ -1,0 +1,36 @@
+config:
+  target: http://127.0.0.1:8080/tukano/rest
+  phases:
+    - name: simple_get
+      duration: 25
+      arrivalRate: 1
+  payload:
+    path: ../data/random_users.csv
+    order: sequence
+    skipHeader: true
+    delimiter: ","
+    skipEmptyLines: true
+    fields:
+      - "userId"
+      - "pwd"
+      - "email"
+      - "displayName"
+scenarios:
+  - name: TuKanoHome
+    flow:
+      - post:
+          url: /users/login
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+          body: "userId={{ userId }}&pwd={{ pwd }}"
+      - log: "Login successful, proceeding to fetch user data."
+      - put:
+          url: /users/{{ userId }}
+          headers:
+            Cookie: "{{ cookies }}"
+            Content-Type: application/json
+          json:
+            userId: "{{ userId }}"
+            pwd: "{{ pwd }}"
+            email: "updated_{{ email }}"
+            displayName: "{{ displayName }}_updated"

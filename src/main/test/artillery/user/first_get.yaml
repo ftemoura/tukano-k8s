@@ -1,0 +1,22 @@
+config:
+  target: http://127.0.0.1:8080/tukano/rest
+  phases:
+    - name: simple_get
+      duration: 1
+      arrivalRate: 1
+
+scenarios:
+  - name: TuKanoHome
+    flow:
+      - log: "Starting to fetch user data."
+      - post:
+          url: /users/login
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+          body: "userId=user1&pwd=Pwd123!@#"
+      - get:
+          url: /users/user1
+
+
+
+

@@ -2,10 +2,10 @@ config:
   target: http://127.0.0.1:8080/tukano/rest
   phases:
     - name: post_csv_users
-      duration: 1
-      arrivalRate: 3
+      duration: 25
+      arrivalRate: 1
   payload:
-    path: ./data/random_users.csv
+    path: ../data/random_users.csv
     order: sequence # selects users sequentially, default is random
     #loadAll: true # load the whole CSV
     skipHeader: true # The first line is a header, so we want to skip it
