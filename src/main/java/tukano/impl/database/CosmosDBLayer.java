@@ -2,6 +2,7 @@ package tukano.impl.database;
 
 import com.azure.cosmos.*;
 import com.azure.cosmos.models.CosmosItemRequestOptions;
+import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.PartitionKey;
 import tukano.api.Result;
@@ -9,11 +10,14 @@ import utils.ConfigLoader;
 
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
 
+import static java.lang.String.format;
 import static tukano.api.Result.ErrorCode.*;
 import static tukano.api.Result.errorCodeFromStatus;
 
 public abstract class CosmosDBLayer {
+    private static Logger Log = Logger.getLogger(CosmosDBLayer.class.getName());
     private static final String CONNECTION_URL = ConfigLoader.getInstance().getCosmosConnectionUrl();
     private static final String DB_KEY = ConfigLoader.getInstance().getCosmosDBKey();
     private static final String DB_NAME = ConfigLoader.getInstance().getCosmosDBName();
@@ -45,8 +49,12 @@ public abstract class CosmosDBLayer {
         return tryCatch(() -> container.readItem(id, new PartitionKey(id), clazz).getItem());
     }
 
-    public <T> Result<?> deleteOne(String containerName, T obj) {
-        return tryCatch(() -> container.deleteItem(obj, new CosmosItemRequestOptions()).getItem());
+    public <T> Result<T> deleteOne(T obj, String etag) {
+        return tryCatch(() -> retry(() -> {
+            Log.info(() -> format("deleteOne : %s\n", obj));
+            container.deleteItem(obj, new CosmosItemRequestOptions().setIfMatchETag(etag));
+            return obj;
+        }, 3, 1000));
     }
 
     public <T> Result<T> updateOne(T obj) {
@@ -57,7 +65,7 @@ public abstract class CosmosDBLayer {
         return tryCatch(() -> container.createItem(obj).getItem());
     }
 
-    public <T> Result<List<T>> query(Class<T> clazz, String queryStr) {
+    public <T> Result<List<T>> query(String queryStr, Class<T> clazz) {
         return tryCatch(() -> {
             var res = container.queryItems(queryStr, new CosmosQueryRequestOptions(), clazz);
             return res.stream().toList();
@@ -69,12 +77,39 @@ public abstract class CosmosDBLayer {
             init();
             return Result.ok(supplierFunc.get());
         } catch (CosmosException ce) {
-            //ce.printStackTrace();
+            ce.printStackTrace();
             return Result.error(errorCodeFromStatus(ce.getStatusCode()));
-        } catch (Exception x) {
+        } catch (Exception  x ) {
             x.printStackTrace();
             return Result.error(INTERNAL_ERROR);
         }
+    }
+
+    public static <T> T retry(Supplier<T> task, int maxRetries, long delay)  {
+        int attempt = 0;
+
+        while (attempt < maxRetries) {
+            try {
+                return task.get();
+            } catch (CosmosException e) {
+                if (errorCodeFromStatus(e.getStatusCode()) == PRECONDITION_FAILED) {
+                    attempt++;
+                    if (attempt >= maxRetries) {
+                        throw e;
+                    }
+                    System.out.println("Attempt " + attempt + " failed: " + e.getMessage());
+
+                    try {
+                        Thread.sleep(delay);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw e;
+                    }
+                }else
+                    throw e;
+            }
+        }
+        throw new RuntimeException("Retry failed");
     }
 
 }

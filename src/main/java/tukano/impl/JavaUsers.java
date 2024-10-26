@@ -14,11 +14,11 @@ import java.util.logging.Logger;
 
 import jakarta.ws.rs.core.*;
 import tukano.api.Result;
-import tukano.api.UserImpl;
 import tukano.api.User;
 import tukano.api.Users;
 import tukano.impl.cache.RedisCacheUsers;
 import tukano.impl.cache.UsersCache;
+import tukano.impl.database.CosmosBDUsers;
 import tukano.impl.database.PostegreUsers;
 import tukano.impl.database.UsersDatabase;
 
@@ -99,7 +99,7 @@ public class JavaUsers implements Users {
 	}
 
 	@Override
-	public Result<User> updateUser(SecurityContext sc, String userId, UserImpl other) {
+	public Result<User> updateUser(SecurityContext sc, String userId, User other) {
 		Log.info(() -> format("updateUser : userId = %s, user: %s\n", userId, other));
 
 		if (badUpdateUserInfo(userId, other))
@@ -147,10 +147,10 @@ public class JavaUsers implements Users {
 
 
 	private boolean badUserInfo( User user) {
-		return (user.userId() == null || user.pwd() == null || user.displayName() == null || user.email() == null);
+		return (user.getId() == null || user.pwd() == null || user.displayName() == null || user.email() == null);
 	}
 	
 	private boolean badUpdateUserInfo( String userId, User info) {
-		return (userId == null ||  info.getUserId() != null && ! userId.equals( info.getUserId()));
+		return (userId == null ||  info.getId() != null && ! userId.equals( info.getId()));
 	}
 }

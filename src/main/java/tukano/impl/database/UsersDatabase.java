@@ -1,7 +1,6 @@
 package tukano.impl.database;
 
 import tukano.api.Result;
-import tukano.api.UserImpl;
 import tukano.api.User;
 
 import java.util.List;
@@ -47,7 +46,7 @@ public interface UsersDatabase {
      *         NOT_FOUND - if no user exists with the provided userId
      *         BAD_REQUEST - otherwise.
      */
-    Result<User> updateUser(String userId, UserImpl other);
+    Result<User> updateUser(String userId, User other);
 
     /**
      * Deletes the user identified by userId

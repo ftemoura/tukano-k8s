@@ -1,12 +1,16 @@
 package tukano.impl.database;
 
 import tukano.api.Result;
-import tukano.api.UserImpl;
-import tukano.api.UserImplDAO;
 import tukano.api.User;
+import tukano.api.UserDAO;
+import tukano.impl.JavaBlobs;
+import tukano.impl.JavaShorts;
+import tukano.impl.Token;
 import utils.ConfigLoader;
+import utils.JSON;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 import static java.lang.String.format;
 import static tukano.api.Result.*;
@@ -15,6 +19,7 @@ import static tukano.api.Result.ErrorCode.NOT_FOUND;
 
 public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
 
+    private static Logger Log = Logger.getLogger(CosmosBDUsers.class.getName());
     private static final String CONTAINER_NAME = ConfigLoader.getInstance().getCosmosDBUsersContainer();
 
     private static CosmosBDUsers instance;
@@ -31,7 +36,7 @@ public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
 
     @Override
     public Result<String> createUser(User user) {
-        return errorOrValue(super.insertOne(user), user.getUserId());
+        return errorOrValue(super.insertOne(user), user.getId());
     }
 
     @Override
@@ -41,50 +46,50 @@ public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
 
     @Override
     public Result<User> getUser(String userId) {
-        Result<UserImplDAO> res = super.getOne(userId, UserImplDAO.class);
-
-        return null;
+        Result<User> r = super.getOne(userId, User.class);
+        Log.info(()-> format("getUser : %s\n", JSON.encode(r.value())));
+        return r;
     }
 
     @Override
-    public Result<User> updateUser(String userId, UserImpl other) {
-        return errorOrResult( getUser(userId), user ->{
-            //Result<UserImplDAO> res = super.updateOne(user.updateFrom(other));
-           // return convertDAOToUser(res);
-            return null;
-        });
+    public Result<User> updateUser(String userId, User other) {
+        return errorOrResult( super.getOne( userId, User.class), user -> super.updateOne( user.updateFrom(other)));
     }
 
     @Override
     public Result<User> deleteUser(String userId) {
-        return null;
+        Result<UserDAO> r = super.getOne(userId, UserDAO.class);
+        Log.info(()-> format("deleteUser : %s\n", JSON.encode(r.value())));
+        return errorOrResult(r, userDAO -> {
+            Result<User> res = super.deleteOne(userDAO, userDAO.get_etag());
+            if(res.isOK()) {
+                JavaShorts.getInstance().deleteAllShorts(userId,Token.get(Token.Service.INTERNAL, userId));
+                JavaBlobs.getInstance().deleteAllBlobs(userId,Token.get(Token.Service.INTERNAL, userId));
+            }
+            return res;
+        });
+
     }
 
     @Override
     public Result<List<User>> searchUsers(String pattern) {
-        return null;
-//        var query = format("SELECT * FROM c WHERE CONTAINS(UPPER(c.userId), '%s')", pattern.toUpperCase());
-//        Result<List<User>> queryRes = super.query(UserImpl.class, query);
-//        if(!queryRes.isOK()) return queryRes;
-//        return ok(queryRes.value()
-//                .stream()
-//                .map(User::copyWithoutPassword)
-//                .toList());
+        var query = format("SELECT * FROM c WHERE CONTAINS(UPPER(c.userId), '%s')", pattern.toUpperCase());
+        Result<List<User>> res = super.query(query, User.class);
+        if(!res.isOK()) return res;
+        return ok(res.value()
+                .stream()
+                .map(User::copyWithoutPassword)
+                .toList());
     }
 
-    private Result<User> convertDAOToUser(Result<UserImplDAO> res) {
-        if(!res.isOK()) return error(res.error());
-        UserImplDAO userDAO = res.value();
-        User user = res.value();
-        //user.setLastModified(userDAO.g);
-        return ok(user);
-    }
     private Result<User> validatedUserOrError(Result<User> res, String pwd ) {
-        if (res.isOK())
+        if (res.isOK()) {
+            Log.info(() -> format("validatedUserOrError : userId = %s, pwd = %s\n", res.value().pwd(), pwd));
             return res.value().pwd().equals(pwd) ? res : error(FORBIDDEN);
-        else if (res.error() == NOT_FOUND)
+        }else if (res.error() == NOT_FOUND) {
+            Log.info(() -> "NOt found");
             return error(FORBIDDEN);
-        else
+        }else
             return res;
     }
 }

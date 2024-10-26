@@ -5,7 +5,6 @@ import java.util.List;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
-import tukano.api.UserImpl;
 import tukano.api.User;
 import tukano.api.Users;
 import tukano.api.rest.RestUsers;
@@ -35,8 +34,8 @@ public class RestUsersResource extends RestResource implements RestUsers {
 	}
 	
 	@Override
-	public User updateUser(SecurityContext sc, String name, UserImpl userImpl) {
-		return super.resultOrThrow( impl.updateUser(sc, name, userImpl));
+	public User updateUser(SecurityContext sc, String name, User user) {
+		return super.resultOrThrow( impl.updateUser(sc, name, user));
 	}
 
 	@Override

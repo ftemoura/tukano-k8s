@@ -43,13 +43,13 @@ public interface Users {
 	 * (the userId cannot be modified).
 	 * @param sc - the SecurityContext including information of the authenticated user.
 	 * @param userId - the userId of the user
-	 * @param userImpl - Updated information
+	 * @param user - Updated information
 	 * @return OK and the updated user object, if the userId exists and password matches the existing password 
 	 *         FORBIDDEN - if the password is incorrect 
 	 *         NOT_FOUND - if no user exists with the provided userId 
 	 *         BAD_REQUEST - otherwise.
 	 */
-	Result<User> updateUser(SecurityContext sc, String userId, UserImpl userImpl);
+	Result<User> updateUser(SecurityContext sc, String userId, User user);
 	
 	/**
 	 * Deletes the user identified by userId

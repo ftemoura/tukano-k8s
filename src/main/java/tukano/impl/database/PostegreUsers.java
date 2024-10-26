@@ -1,7 +1,6 @@
 package tukano.impl.database;
 
 import tukano.api.Result;
-import tukano.api.UserImpl;
 import tukano.api.User;
 import tukano.impl.JavaBlobs;
 import tukano.impl.JavaShorts;
@@ -19,7 +18,7 @@ public class PostegreUsers implements UsersDatabase {
 
     @Override
     public Result<String> createUser(User user) {
-        return errorOrValue( DB.insertOne(user), user.getUserId() );
+        return errorOrValue( DB.insertOne(user), user.getId() );
     }
 
     @Override
@@ -33,14 +32,14 @@ public class PostegreUsers implements UsersDatabase {
     }
 
     @Override
-    public Result<User> updateUser(String userId, UserImpl other) {
-        return errorOrResult( DB.getOne( userId, UserImpl.class), user -> DB.updateOne( user.updateFrom(other)));
+    public Result<User> updateUser(String userId, User other) {
+        return errorOrResult( DB.getOne( userId, User.class), user -> DB.updateOne( user.updateFrom(other)));
     }
 
     @Override
-    public Result<User> deleteUser(String userId) {
+    public Result<User> deleteUser(String userId) {//TODO Esta retornar not found primeiro
         return DB.transaction( hibernate -> {
-            errorOrResult( DB.getOne( userId, UserImpl.class), user -> {
+            return errorOrResult( DB.getOne( userId, User.class), user -> {
                 Result<User> userDelRes = DB.deleteOne(user);
                 // Delete user shorts and related info asynchronously in a separate thread
                 //Executors.defaultThreadFactory().newThread(() -> {
@@ -55,7 +54,7 @@ public class PostegreUsers implements UsersDatabase {
     @Override
     public Result<List<User>> searchUsers(String pattern) {
         var query = format("SELECT * FROM User u WHERE UPPER(u.userId) LIKE '%%%s%%'", pattern.toUpperCase());
-        return ok(DB.sql(query, UserImpl.class)
+        return ok(DB.sql(query, User.class)
                 .stream()
                 .map(User::copyWithoutPassword)
                 .toList());

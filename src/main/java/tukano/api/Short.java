@@ -1,5 +1,6 @@
 package tukano.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import jakarta.persistence.Entity;
@@ -23,6 +24,7 @@ public class Short {
 
 	@UpdateTimestamp
 	@JsonSerialize(using = LocalDateTimeSerializer.class)
+	@JsonIgnore
 	private LocalDateTime lastModified;
 	@Id
 	String shortId;
@@ -89,7 +91,9 @@ public class Short {
 	public LocalDateTime getLastModified() {
 		return lastModified;
 	}
-
+	public void setLastModified(LocalDateTime t) {
+		this.lastModified = t;
+	}
 	@Override
 	public String toString() {
 		return "Short [shortId=" + shortId + ", ownerId=" + ownerId + ", blobUrl=" + blobUrl + ", timestamp="
@@ -98,6 +102,8 @@ public class Short {
 	
 	public Short copyWithLikes_And_Token( long totLikes) { // TODO token fix (maybe not working)
 		var urlWithToken = String.format("%s?token=%s", blobUrl, Token.get(Token.Service.BLOBS, blobUrl));
-		return new Short( shortId, ownerId, urlWithToken, timestamp, (int)totLikes);
+		Short shr = new Short( shortId, ownerId, urlWithToken, timestamp, (int)totLikes);
+		shr.setLastModified(lastModified);
+		return shr;
 	}	
 }

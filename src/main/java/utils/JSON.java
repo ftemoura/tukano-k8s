@@ -3,10 +3,12 @@ package utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 final public class JSON {
-	final static ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+	final static ObjectMapper mapper = new ObjectMapper()
+			.registerModule(new JavaTimeModule());
 
 	synchronized public static final String encode(Object obj) {
 		try {

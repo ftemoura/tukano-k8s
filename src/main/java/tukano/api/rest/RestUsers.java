@@ -4,7 +4,6 @@ import java.util.List;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
-import tukano.api.UserImpl;
 import tukano.api.User;
 import tukano.api.rest.filters.auth.AuthRequired;
 
@@ -45,7 +44,7 @@ public interface RestUsers {
 	@Path("/{" + USER_ID+ "}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	User updateUser(@Context SecurityContext sc, @PathParam( USER_ID ) String userId, UserImpl userImpl);
+	User updateUser(@Context SecurityContext sc, @PathParam( USER_ID ) String userId, User user);
 	
 	
 	@DELETE
