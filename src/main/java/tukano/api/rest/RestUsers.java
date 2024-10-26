@@ -2,9 +2,9 @@ package tukano.api.rest;
 
 import java.util.List;
 
-import com.azure.core.http.HttpHeader;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
+import tukano.api.UserImpl;
 import tukano.api.User;
 import tukano.api.rest.filters.auth.AuthRequired;
 
@@ -37,7 +37,7 @@ public interface RestUsers {
 	@AuthRequired
 	@Path("/{" + USER_ID+ "}")
 	@Produces(MediaType.APPLICATION_JSON)
-	User getUser(@Context SecurityContext sc,  @PathParam(USER_ID) String userId);
+	User getUser(@Context SecurityContext sc, @PathParam(USER_ID) String userId);
 	
 	
 	@PUT
@@ -45,7 +45,7 @@ public interface RestUsers {
 	@Path("/{" + USER_ID+ "}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	User updateUser(@Context SecurityContext sc, @PathParam( USER_ID ) String userId, User user);
+	User updateUser(@Context SecurityContext sc, @PathParam( USER_ID ) String userId, UserImpl userImpl);
 	
 	
 	@DELETE
@@ -57,5 +57,5 @@ public interface RestUsers {
 	
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	List<User> searchUsers(@QueryParam(QUERY) String pattern);	
+	List<User> searchUsers(@QueryParam(QUERY) String pattern);
 }

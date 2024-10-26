@@ -3,12 +3,10 @@ package tukano.impl;
 import static java.lang.String.format;
 import static tukano.api.Result.ErrorCode.*;
 import static tukano.api.Result.error;
-import static tukano.api.Result.errorOrResult;
 import static tukano.api.Result.errorOrValue;
 import static tukano.api.Result.ok;
 
 import java.time.Instant;
-import java.time.temporal.TemporalUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -16,17 +14,21 @@ import java.util.logging.Logger;
 
 import jakarta.ws.rs.core.*;
 import tukano.api.Result;
+import tukano.api.UserImpl;
 import tukano.api.User;
 import tukano.api.Users;
 import tukano.impl.cache.RedisCacheUsers;
 import tukano.impl.cache.UsersCache;
-import utils.DB;
+import tukano.impl.database.PostegreUsers;
+import tukano.impl.database.UsersDatabase;
 
 public class JavaUsers implements Users {
 
 	private static Logger Log = Logger.getLogger(JavaUsers.class.getName());
 
 	private UsersCache cache;
+
+	private UsersDatabase dbImpl;
 
 	private static Users instance;
 
@@ -38,19 +40,20 @@ public class JavaUsers implements Users {
 	
 	private JavaUsers() {
 		this.cache = new RedisCacheUsers();
+		this.dbImpl = new PostegreUsers();
 	}
 	
 	@Override
 	public Result<String> createUser(User user) {
 		Log.info(() -> format("createUser : %s\n", user));
 
-		if( badUserInfo( user ) )
+		if( badUserInfo(user) )
 				return error(BAD_REQUEST);
 
-		Result<String> bdRes = errorOrValue( DB.insertOne( user), user.getUserId() );
+		Result<String> bdRes = dbImpl.createUser(user);
 		if(bdRes.isOK())
 			Executors.defaultThreadFactory().newThread(() -> {
-				cache.cacheUser( user);
+				cache.cacheUser(user);
 			}).start();
 		return bdRes;
 	}
@@ -59,7 +62,7 @@ public class JavaUsers implements Users {
 	public Result<Response> login(String userId, String pwd) {
 		if (userId == null)
 			return error(BAD_REQUEST);
-		var res = validatedUserOrError( DB.getOne( userId, User.class), pwd);
+		Result<User> res = dbImpl.login(userId, pwd);
 		if (!res.isOK()) {
 			return Result.error(res.error());
 		} else {
@@ -86,7 +89,8 @@ public class JavaUsers implements Users {
 		Result<User> cacheRes = cache.getUser(userId);
 		if (cacheRes.isOK())
 			return cacheRes;
-		Result<User> bdRes = DB.getOne( userId, User.class);
+		Result<User> bdRes = dbImpl.getUser(userId);
+
 		if(bdRes.isOK())
 			Executors.defaultThreadFactory().newThread(() -> {
 				cache.cacheUser( bdRes.value());
@@ -95,7 +99,7 @@ public class JavaUsers implements Users {
 	}
 
 	@Override
-	public Result<User> updateUser(SecurityContext sc, String userId, User other) {
+	public Result<User> updateUser(SecurityContext sc, String userId, UserImpl other) {
 		Log.info(() -> format("updateUser : userId = %s, user: %s\n", userId, other));
 
 		if (badUpdateUserInfo(userId, other))
@@ -105,7 +109,7 @@ public class JavaUsers implements Users {
 		if( !userId.equals(sc.getUserPrincipal().getName()))
 			return error(FORBIDDEN);
 
-		Result<User> bdRes = errorOrResult( DB.getOne( userId, User.class), user -> DB.updateOne( user.updateFrom(other)));
+		Result<User> bdRes = dbImpl.updateUser(userId, other);
 
 		if(bdRes.isOK())
 			Executors.defaultThreadFactory().newThread(() -> {
@@ -125,21 +129,11 @@ public class JavaUsers implements Users {
 		if( !userId.equals(sc.getUserPrincipal().getName()))
 			return error(FORBIDDEN);
 
-		Result<User> dbRes = errorOrResult( DB.getOne( userId, User.class), user -> {
-
-			// Delete user shorts and related info asynchronously in a separate thread
-			Executors.defaultThreadFactory().newThread( () -> {
-				//TODO fix tokens
-				JavaShorts.getInstance().deleteAllShorts(userId, /*Token.get(userId)*/ Token.get(Token.Service.BLOBS, userId));
-				JavaBlobs.getInstance().deleteAllBlobs(userId, /*Token.get(userId)*/ Token.get(Token.Service.BLOBS, userId));
-			}).start();
-			
-			return DB.deleteOne( user);
-		});
+		Result<User> dbRes = dbImpl.deleteUser(userId);
 
 		if(dbRes.isOK())
 			Executors.defaultThreadFactory().newThread(() -> {
-				cache.deleteUser( userId);
+				cache.deleteUser(userId);
 			}).start();
 		return dbRes;
 	}
@@ -148,25 +142,10 @@ public class JavaUsers implements Users {
 	public Result<List<User>> searchUsers(String pattern) {
 		Log.info( () -> format("searchUsers : patterns = %s\n", pattern));
 
-		var query = format("SELECT * FROM User u WHERE UPPER(u.userId) LIKE '%%%s%%'", pattern.toUpperCase());
-		var hits = DB.sql(query, User.class)
-				.stream()
-				.map(User::copyWithoutPassword)
-				.toList();
-
-		return ok(hits);
+		return dbImpl.searchUsers(pattern);
 	}
 
-	private Result<User> validatedUserOrError( Result<User> res, String pwd ) {
-		if (res.isOK())
-			return res.value().pwd().equals(pwd) ? res : error(FORBIDDEN);
-		else if (res.error() == NOT_FOUND)
-			return error(FORBIDDEN);
-		else
-			return res;
 
-	}
-	
 	private boolean badUserInfo( User user) {
 		return (user.userId() == null || user.pwd() == null || user.displayName() == null || user.email() == null);
 	}

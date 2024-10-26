@@ -1,6 +1,7 @@
 package tukano.impl.cache;
 
 import tukano.api.Result;
+import tukano.api.UserImpl;
 import tukano.api.User;
 import utils.JSON;
 
@@ -28,6 +29,6 @@ public class RedisCacheUsers extends RedisCache implements UsersCache {
         Result<String> res = super.getKeyValue(cacheKey);
         if (!res.isOK())
             return Result.error(res.error());
-        return Result.ok(JSON.decode(res.value(), User.class));
+        return Result.ok(JSON.decode(res.value(), UserImpl.class));
     }
 }

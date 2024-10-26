@@ -1,7 +1,5 @@
 package tukano.api;
 
-import jakarta.ws.rs.FormParam;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 
@@ -45,13 +43,13 @@ public interface Users {
 	 * (the userId cannot be modified).
 	 * @param sc - the SecurityContext including information of the authenticated user.
 	 * @param userId - the userId of the user
-	 * @param user - Updated information
+	 * @param userImpl - Updated information
 	 * @return OK and the updated user object, if the userId exists and password matches the existing password 
 	 *         FORBIDDEN - if the password is incorrect 
 	 *         NOT_FOUND - if no user exists with the provided userId 
 	 *         BAD_REQUEST - otherwise.
 	 */
-	Result<User> updateUser(SecurityContext sc, String userId, User user);
+	Result<User> updateUser(SecurityContext sc, String userId, UserImpl userImpl);
 	
 	/**
 	 * Deletes the user identified by userId
@@ -73,5 +71,5 @@ public interface Users {
 	 * @return OK when the search was successful, regardless of the number of hits (including 0 hits). 
 	 *         BAD_REQUEST - otherwise.
 	 */
-	Result<List<User>> searchUsers(String pattern);	
+	Result<List<User>> searchUsers(String pattern);
 }

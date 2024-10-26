@@ -12,5 +12,13 @@
         <option name="dotAzurePath" value="C:\Users\ASUS\Ambiente de Trabalho\PC\Faculdade\5_ANO\SCC\Praticas\SCC-Tukano\.azure" />
       </configuration>
     </facet>
+    <facet type="jpa" name="JPA">
+      <configuration>
+        <setting name="validation-enabled" value="true" />
+        <setting name="provider-name" value="Hibernate" />
+        <datasource-mapping />
+        <naming-strategy-map />
+      </configuration>
+    </facet>
   </component>
 </module>

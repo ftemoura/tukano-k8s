@@ -2,6 +2,9 @@ package tukano.api;
 
 import java.util.function.Function;
 
+import static tukano.api.Result.ErrorCode.*;
+import static tukano.api.Result.ErrorCode.INTERNAL_ERROR;
+
 /**
  * 
  * Represents the result of an operation, either wrapping a result of the given type,
@@ -111,6 +114,15 @@ public interface Result<T> {
 			return ok(b.apply(a.value()));
 		else
 			return error( a.error() );
+	}
+
+	static Result.ErrorCode errorCodeFromStatus(int status) {
+		return switch (status) {
+			case 200 -> OK;
+			case 404 -> NOT_FOUND;
+			case 409 -> CONFLICT;
+			default -> INTERNAL_ERROR;
+		};
 	}
 }
 

@@ -10,20 +10,14 @@ import static tukano.api.Result.ErrorCode.BAD_REQUEST;
 import static tukano.api.Result.ErrorCode.FORBIDDEN;
 import static utils.DB.getOne;
 
-import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.SecurityContext;
-import tukano.api.Blobs;
-import tukano.api.Result;
+import tukano.api.*;
 import tukano.api.Short;
-import tukano.api.Shorts;
-import tukano.api.User;
 import tukano.impl.cache.RedisCacheShorts;
 import tukano.impl.cache.ShortsCache;
 import tukano.impl.data.Following;
@@ -237,17 +231,13 @@ public class JavaShorts implements Shorts {
 		}
 		return bdRes;
 	}
-		
-	protected Result<User> okUser( String userId, String pwd) {
-		return JavaUsers.getInstance().getUser(FakeSecurityContext.get(userId), userId);
-	}
 
-	private Result<User> okUser( String userId, SecurityContext sc) {
+	private Result<User> okUser(String userId, SecurityContext sc) {
 		return JavaUsers.getInstance().getUser(sc, userId);
 	}
 	
 	private Result<Void> okUser( String userId ) {
-		var res = okUser(userId, "");
+		var res = okUser(userId, FakeSecurityContext.get(userId));
 		if( res.error() != FORBIDDEN )
 			return ok();
 		else
@@ -258,26 +248,22 @@ public class JavaShorts implements Shorts {
 	public Result<Void> deleteAllShorts(String userId, String token) {
 		Log.info(() -> format("deleteAllShorts : userId = %s, token = %s\n", userId, token));
 
-		// TODO fix tokens
-		//if( ! Token.isValid( token, "shorts",userId ) )
-		//	return error(FORBIDDEN);
-		/*Result<User> user = okUser(userId, sc);
-		if(!user.isOK()) //TODO ele nao tinha esta verificaçao
-			return error(user.error());*/
+		if( ! Token.isValid( token, Token.Service.INTERNAL, userId ) )
+			return error(FORBIDDEN);
 
 		return DB.transaction( (hibernate) -> {
 						
 			//delete shorts
-			var query1 = format("DELETE Short s WHERE s.ownerId = '%s'", userId);		
-			hibernate.createQuery(query1, Short.class).executeUpdate();
-			
+			var query1 = format("DELETE Short s WHERE s.ownerId = '%s'", userId);
+			hibernate.createMutationQuery(query1).executeUpdate();
+
 			//delete follows
-			var query2 = format("DELETE Following f WHERE f.follower = '%s' OR f.followee = '%s'", userId, userId);		
-			hibernate.createQuery(query2, Following.class).executeUpdate();
+			var query2 = format("DELETE Following f WHERE f.follower = '%s' OR f.followee = '%s'", userId, userId);
+			hibernate.createMutationQuery(query2).executeUpdate();
 			
 			//delete likes
-			var query3 = format("DELETE Likes l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);		
-			hibernate.createQuery(query3, Likes.class).executeUpdate();
+			var query3 = format("DELETE Likes l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
+			hibernate.createMutationQuery(query3).executeUpdate();
 			
 		});
 	}

@@ -23,7 +23,7 @@ scenarios:
           headers:
             Content-Type: application/x-www-form-urlencoded
           body: "userId={{ userId }}&pwd={{ pwd }}"
-      - log: "Login successful, proceeding to fetch user data."
+      - log: "Login successful, proceeding to update user data."
       - put:
           url: /users/{{ userId }}
           headers:

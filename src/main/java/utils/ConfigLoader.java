@@ -54,4 +54,24 @@ public class ConfigLoader {
     public boolean isCacheEnabled() {
         return Boolean.parseBoolean(properties.getProperty("azure.cacheEnabled"));
     }
+
+    public String getCosmosConnectionUrl() {
+        return properties.getProperty("azure.cosmosConnectionUrl");
+    }
+
+    public String getCosmosDBKey() {
+        return properties.getProperty("azure.cosmosDBKey");
+    }
+
+    public String getCosmosDBName() {
+        return properties.getProperty("azure.cosmosDBName");
+    }
+
+    public String getCosmosDBUsersContainer() {
+        return properties.getProperty("azure.cosmosDBUsersContainer");
+    }
+
+    public String getCosmosDBShortsContainer() {
+        return properties.getProperty("azure.cosmosDBShortsContainer");
+    }
 }
