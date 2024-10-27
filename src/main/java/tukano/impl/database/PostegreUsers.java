@@ -8,6 +8,7 @@ import tukano.impl.Token;
 import utils.DB;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 import static java.lang.String.format;
 import static tukano.api.Result.*;
@@ -15,7 +16,7 @@ import static tukano.api.Result.ErrorCode.FORBIDDEN;
 import static tukano.api.Result.ErrorCode.NOT_FOUND;
 
 public class PostegreUsers implements UsersDatabase {
-
+    private static Logger Log = Logger.getLogger(PostegreUsers.class.getName());
     @Override
     public Result<User> createUser(User user) {
         return DB.insertOne(user);
@@ -53,7 +54,8 @@ public class PostegreUsers implements UsersDatabase {
 
     @Override
     public Result<List<User>> searchUsers(String pattern) {
-        var query = format("SELECT * FROM User u WHERE UPPER(u.userId) LIKE '%%%s%%'", pattern.toUpperCase());
+        var query = format("SELECT * FROM User u WHERE UPPER(u.id) LIKE '%%%s%%'", pattern.toUpperCase());
+        Log.info("Query: " + query);
         return ok(DB.sql(query, User.class)
                 .stream()
                 .map(User::copyWithoutPassword)

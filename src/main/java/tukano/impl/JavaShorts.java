@@ -22,6 +22,7 @@ import tukano.impl.cache.RedisCacheShorts;
 import tukano.impl.cache.ShortsCache;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
+import tukano.impl.rest.MainApplication;
 import tukano.impl.rest.TukanoRestServer;
 import utils.DB;
 import utils.FakeSecurityContext;
@@ -49,7 +50,7 @@ public class JavaShorts implements Shorts {
 
 		Result<Short> result = errorOrResult( okUser(userId, sc), user -> {
 			var shortId = format("%s+%s", userId, UUID.randomUUID());
-			var blobUrl = format("%s/%s/%s", TukanoRestServer.serverURI, Blobs.NAME, shortId); 
+			var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
 			var shrt = new Short(shortId, userId, blobUrl);
 
 			return errorOrValue(DB.insertOne(shrt), s -> s.copyWithLikes_And_Token(0));
@@ -100,8 +101,10 @@ public class JavaShorts implements Shorts {
 					hibernate.remove( shrt);
 					
 					var query = format("DELETE Likes l WHERE l.shortId = '%s'", shortId);
-					hibernate.createNativeQuery( query, Likes.class).executeUpdate();
-					JavaBlobs.getInstance().delete(shrt.getBlobUrl(), Token.get(Token.Service.BLOBS, shrt.getBlobUrl()) );
+					hibernate.createMutationQuery(query).executeUpdate();
+					var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
+					//TODO e se o delete falhar?
+					JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, blobUrl) );
 				});
 			});	
 		});

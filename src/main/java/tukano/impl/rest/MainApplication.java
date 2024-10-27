@@ -9,11 +9,23 @@ import tukano.impl.JavaBlobs;
 import tukano.impl.JavaShorts;
 import tukano.impl.JavaUsers;
 import tukano.impl.Token;
+import utils.IP;
 
 public class MainApplication extends Application
 {
     private Set<Object> singletons = new HashSet<>();
     private Set<Class<?>> resources = new HashSet<>();
+
+    static final String INETADDR_ANY = "0.0.0.0";
+    static String SERVER_BASE_URI = "http://127.0.0.1:%s/tukano/rest";//TODO mudar feito para dar no docker
+
+    public static final int PORT = 8080;
+
+    public static String serverURI;
+
+    static {
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%4$s: %5$s");
+    }
 
     public MainApplication() {
         singletons.add(JavaShorts.class);
@@ -23,6 +35,7 @@ public class MainApplication extends Application
         resources.add(RestShortsResource.class);
         resources.add(RestUsersResource.class);
         resources.add(AuthenticationFilter.class);
+        serverURI = String.format(SERVER_BASE_URI, PORT);
         Token.setSecret("secret"); // TODO
     }
 

@@ -1,0 +1,23 @@
+config:
+  target: http://127.0.0.1:8080/tukano/rest
+  plugins:
+    expect: { }
+    metrics-by-endpoint: { }
+  phases:
+    - name: simple_get
+      duration: 1 # How long the test will run for, in seconds
+      arrivalRate: 1 # Number of arrivals per second
+scenarios:
+  - name: TuKanoHome
+    flow:
+      - get: # This is to fetch user data after login
+          url: /users?query=user1 # Ensure the URL is correct
+          capture:
+            - json: '$'
+              as: response
+          expect:
+            - statusCode: 200 # Check if the response status code is 200
+            - contentType: json
+            - equals:
+                - '11'
+                - '{{ response.length }}'

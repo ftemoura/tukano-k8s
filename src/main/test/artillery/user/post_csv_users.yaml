@@ -1,5 +1,8 @@
 config:
   target: http://127.0.0.1:8080/tukano/rest
+  plugins:
+    expect: { }
+    metrics-by-endpoint: { }
   phases:
     - name: post_csv_users
       duration: 25
@@ -24,7 +27,7 @@ scenarios:
           headers:
             Content-Type: application/json
           json:
-            userId: "{{ userId }}" # this parameter is filled from the fields above
+            id: "{{ userId }}" # this parameter is filled from the fields above
             pwd: "{{ pwd }}"
             email: "{{ email }}"
             displayName: "{{ displayName }}"

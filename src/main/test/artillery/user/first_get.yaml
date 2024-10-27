@@ -1,5 +1,8 @@
 config:
   target: http://127.0.0.1:8080/tukano/rest
+  plugins:
+    expect: { }
+    metrics-by-endpoint: { }
   phases:
     - name: simple_get
       duration: 1

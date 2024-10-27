@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 
 import tukano.api.Blobs;
 import tukano.api.Result;
+import tukano.impl.rest.MainApplication;
 import tukano.impl.rest.TukanoRestServer;
 import tukano.impl.storage.AzureBlobStorage;
 import tukano.impl.storage.BlobStorage;
@@ -32,7 +33,7 @@ public class JavaBlobs implements Blobs {
 	
 	private JavaBlobs() {
 		storage = new FilesystemStorage();
-		baseURI = String.format("%s/%s/", TukanoRestServer.serverURI, Blobs.NAME);
+		baseURI = String.format("%s/%s/", MainApplication.serverURI, Blobs.NAME);
 	}
 	
 	@Override

@@ -1,5 +1,8 @@
 config:
   target: http://127.0.0.1:8080/tukano/rest
+  plugins:
+    expect: { }
+    metrics-by-endpoint: { }
   phases:
     - name: simple_get
       duration: 25
@@ -30,7 +33,7 @@ scenarios:
             Cookie: "{{ cookies }}"
             Content-Type: application/json
           json:
-            userId: "{{ userId }}"
+            id: "{{ userId }}"
             pwd: "{{ pwd }}"
             email: "updated_{{ email }}"
             displayName: "{{ displayName }}_updated"

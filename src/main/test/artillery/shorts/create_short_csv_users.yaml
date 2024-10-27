@@ -1,0 +1,51 @@
+config:
+    target: http://127.0.0.1:8080/tukano/rest
+    plugins:
+      expect: { }
+      metrics-by-endpoint: {}
+    processor: "./shorts-utils.js"
+    phases:
+        - name: simple_post
+          duration: 30
+          arrivalRate: 1
+    payload:
+      path: ../data/random_users.csv
+      order: sequence
+      skipHeader: true
+      delimiter: ","
+      skipEmptyLines: true
+      fields:
+        - "userId"
+        - "pwd"
+        - "email"
+        - "displayName"
+scenarios:
+    - name: create a short
+      flow:
+        - post:
+            url: /users/login
+            expect:
+              - statusCode: 200
+            headers:
+              Content-Type: application/x-www-form-urlencoded
+            body: "userId={{ userId }}&pwd={{ pwd }}"
+        - log: "Login successful, proceeding to create a short."
+        - post:
+            url: /shorts/{{ userId }}
+            expect:
+              - statusCode: 200
+            capture:
+              json: '$.blobUrl'
+              as: blobUrl
+        - log : "Short created successfully. Let's upload it {{ blobUrl }}"
+        - post:
+            url: "{{ blobUrl }}"
+            expect:
+              - statusCode: 204
+            headers:
+              Content-Type: application/octet-stream
+            beforeRequest: 'addMultipartFormData'
+        - log: "Short uploaded successfully."
+
+
+
