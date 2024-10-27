@@ -23,3 +23,17 @@ scenarios:
             pwd: "232121"
             email: "email"
             displayName: "name"
+
+after:
+  flow:
+    - post:
+        url: /users/login
+        headers:
+          Content-Type: application/x-www-form-urlencoded
+        body: "userId=sopodehaverum&pwd=232121"
+    - log: "Login successful, proceeding to delete user data."
+    - delete:
+        url: /users/sopodehaverum
+        expect:
+          - statusCode: 200
+    - log: "User data deleted."

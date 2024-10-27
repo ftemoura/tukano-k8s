@@ -11,19 +11,33 @@ config:
 scenarios:
   - name: TuKanoHome
     flow:
-      - log: "Starting to fetch user data."
       - post:
           url: /users/login
           headers:
             Content-Type: application/x-www-form-urlencoded
           body: "userId=user1&pwd=Pwd123!@#"
           expect:
-              - statusCode: 200
+            - statusCode: 200
+      - log: "Starting to fetch user data."
       - get:
           url: /users/user1
           expect:
             - statusCode: 200
 
-
+after:
+  flow:
+    - log: "user login"
+    - post:
+        url: /users/login
+        headers:
+          Content-Type: application/x-www-form-urlencoded
+        body: "userId=user1&pwd=Pwd123!@#"
+        expect:
+          - statusCode: 200
+    - delete:
+        url: /users/user1
+        expect:
+          - statusCode: 200
+    - log: "User data deleted."
 
 
