@@ -35,8 +35,8 @@ public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
     }
 
     @Override
-    public Result<String> createUser(User user) {
-        return errorOrValue(super.insertOne(user), user.getId());
+    public Result<User> createUser(User user) {
+        return super.insertOne(user);
     }
 
     @Override
@@ -46,9 +46,7 @@ public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
 
     @Override
     public Result<User> getUser(String userId) {
-        Result<User> r = super.getOne(userId, User.class);
-        Log.info(()-> format("getUser : %s\n", JSON.encode(r.value())));
-        return r;
+         return super.getOne(userId, User.class);
     }
 
     @Override

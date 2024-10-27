@@ -2,9 +2,11 @@ package tukano.impl.storage;
 
 import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.BlobContainerClientBuilder;
+import com.azure.storage.blob.models.BlobItem;
 import tukano.api.Result;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.function.Consumer;
 
 import utils.ConfigLoader;
@@ -68,6 +70,19 @@ public class AzureBlobStorage implements BlobStorage {
 
         blob.delete();
         return Result.ok();
+    }
+
+    @Override
+    public Result<Void> deleteFolder(String userId) {
+        Iterator<BlobItem> blobs = containerClient.listBlobsByHierarchy(userId+"/").iterator();
+        if(!blobs.hasNext())
+            return error(NOT_FOUND);
+
+        while(blobs.hasNext()) {
+            BlobItem blob = blobs.next();
+            containerClient.getBlobClient(blob.getName()).delete();
+        }
+        return ok();
     }
 
     @Override

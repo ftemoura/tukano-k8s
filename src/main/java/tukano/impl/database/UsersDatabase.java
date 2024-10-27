@@ -13,7 +13,7 @@ public interface UsersDatabase {
      * 		CONFLICT - if the name already exists.
      * 		BAD_REQUEST - otherwise.
      */
-    Result<String> createUser(User user);
+    Result<User> createUser(User user);
 
     /**
      * User authentication

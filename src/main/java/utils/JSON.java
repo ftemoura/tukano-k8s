@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 final public class JSON {
-	final static ObjectMapper mapper = new ObjectMapper()
+	public final static ObjectMapper mapper = new ObjectMapper()
 			.registerModule(new JavaTimeModule());
 
 	synchronized public static final String encode(Object obj) {

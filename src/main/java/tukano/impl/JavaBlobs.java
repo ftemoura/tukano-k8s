@@ -82,7 +82,7 @@ public class JavaBlobs implements Blobs {
 		if( ! Token.isValid( token, Token.Service.INTERNAL, userId ) )
 			return error(FORBIDDEN);
 		
-		return storage.delete( toPath(userId));
+		return storage.deleteFolder( toPath(userId));
 	}
 	
 	private boolean validBlobId(String blobId, String token) {		

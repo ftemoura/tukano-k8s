@@ -1,6 +1,7 @@
 package tukano.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -14,6 +15,7 @@ import java.time.format.DateTimeParseException;
 @Entity
 public class User {
 	@UpdateTimestamp
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	private String _ts;
 
 	@Id
@@ -59,19 +61,15 @@ public class User {
 	public String pwd() {
 		return pwd;
 	}
-
 	public String email() {
 		return email;
 	}
-
 	public String displayName() {
 		return displayName;
 	}
-
 	public String get_ts() {
 		return _ts;
 	}
-
 	public void set_ts(String ts) {
 		_ts = ts;
 	}
@@ -95,7 +93,7 @@ public class User {
 	}
 	@Override
 	public String toString() {
-		return "User [ts="+_ts +"userId=" + id + ", pwd=" + pwd + ", email=" + email + ", displayName=" + displayName + "]";
+		return "User [ts="+_ts +", userId=" + id + ", pwd=" + pwd + ", email=" + email + ", displayName=" + displayName + "]";
 	}
 	public User copyWithoutPassword() {
 		return new User(id, "", email, displayName);

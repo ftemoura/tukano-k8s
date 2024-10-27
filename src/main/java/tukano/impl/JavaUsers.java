@@ -40,7 +40,7 @@ public class JavaUsers implements Users {
 	
 	private JavaUsers() {
 		this.cache = new RedisCacheUsers();
-		this.dbImpl = new PostegreUsers();
+		this.dbImpl = new CosmosBDUsers();
 	}
 	
 	@Override
@@ -50,12 +50,13 @@ public class JavaUsers implements Users {
 		if( badUserInfo(user) )
 				return error(BAD_REQUEST);
 
-		Result<String> bdRes = dbImpl.createUser(user);
-		if(bdRes.isOK())
+		Result<User> bdRes = dbImpl.createUser(user);
+		if(bdRes.isOK()) {
 			Executors.defaultThreadFactory().newThread(() -> {
-				cache.cacheUser(user);
+				cache.cacheUser(bdRes.value());
 			}).start();
-		return bdRes;
+		}
+		return errorOrValue(bdRes, user.getId());
 	}
 
 	@Override

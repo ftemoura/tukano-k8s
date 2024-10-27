@@ -17,8 +17,8 @@ import static tukano.api.Result.ErrorCode.NOT_FOUND;
 public class PostegreUsers implements UsersDatabase {
 
     @Override
-    public Result<String> createUser(User user) {
-        return errorOrValue( DB.insertOne(user), user.getId() );
+    public Result<User> createUser(User user) {
+        return DB.insertOne(user);
     }
 
     @Override

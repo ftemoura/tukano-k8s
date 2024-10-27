@@ -5,6 +5,7 @@ import com.azure.cosmos.models.CosmosItemRequestOptions;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.PartitionKey;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import tukano.api.Result;
 import utils.ConfigLoader;
 
@@ -15,6 +16,7 @@ import java.util.logging.Logger;
 import static java.lang.String.format;
 import static tukano.api.Result.ErrorCode.*;
 import static tukano.api.Result.errorCodeFromStatus;
+import static utils.JSON.mapper;
 
 public abstract class CosmosDBLayer {
     private static Logger Log = Logger.getLogger(CosmosDBLayer.class.getName());
@@ -51,7 +53,6 @@ public abstract class CosmosDBLayer {
 
     public <T> Result<T> deleteOne(T obj, String etag) {
         return tryCatch(() -> retry(() -> {
-            Log.info(() -> format("deleteOne : %s\n", obj));
             container.deleteItem(obj, new CosmosItemRequestOptions().setIfMatchETag(etag));
             return obj;
         }, 3, 1000));
@@ -62,7 +63,25 @@ public abstract class CosmosDBLayer {
     }
 
     public <T> Result<T> insertOne(T obj) {
-        return tryCatch(() -> container.createItem(obj).getItem());
+        return tryCatch(() ->{
+            CosmosItemResponse<T> response = container.createItem(obj);
+
+            // Log the basic response details
+            Log.info("Insert Response: " + response);
+            Log.info("Response Status Code: " + response.getStatusCode());
+            Log.info("Request Charge: " + response.getRequestCharge());
+
+            // Check and log `_ts` value if present
+            ObjectNode responseNode = mapper.valueToTree(response.getItem());
+            if (responseNode.has("_ts")) {
+                Log.info("the User created: " + response.getItem());
+                Log.info("_ts value in the response: " + responseNode.get("_ts").asText());
+            } else {
+                Log.warning("_ts field is not present in the response.");
+            }
+
+            return response.getItem();
+        });
     }
 
     public <T> Result<List<T>> query(String queryStr, Class<T> clazz) {
