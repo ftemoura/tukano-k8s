@@ -1,6 +1,7 @@
 module.exports = {
     addMultipartFormData,
-    saveShortId
+    saveShortId,
+    saveBlobUrl
 }
 
 
@@ -20,3 +21,12 @@ function saveShortId(requestParams, response, context, ee, next) {
     context.shortId = response.blobUrl;
     return next();
 }
+
+function saveBlobUrl(requestParams, response, context, ee, next) {
+    //console.log(response.body);
+    var res = JSON.parse(response.body);
+    context.vars.blobUrl = res.blobUrl;
+    context.vars.shortId = res.shortId;
+    return next();
+}
+

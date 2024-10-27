@@ -1,0 +1,25 @@
+config:
+  target: http://127.0.0.1:8080/tukano/rest
+  plugins:
+    expect: { }
+    metrics-by-endpoint: { }
+  phases:
+    - name: post_crr_user
+      duration: 1
+      arrivalRate: 40
+scenarios:
+  - name: TuKanoRegister
+    flow:
+      - post:
+          url: /users/
+          expect:
+            - statusCode:
+              - 200
+              - 409
+          headers:
+            Content-Type: application/json
+          json:
+            id: "sopodehaverum" # this parameter is filled from the fields above
+            pwd: "232121"
+            email: "email"
+            displayName: "name"

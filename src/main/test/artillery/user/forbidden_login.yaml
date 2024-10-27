@@ -1,0 +1,23 @@
+config:
+  target: http://127.0.0.1:8080/tukano/rest
+  plugins:
+    expect: { }
+    metrics-by-endpoint: {}
+  phases:
+    - name: forbidden login
+      duration: 5
+      arrivalRate: 10
+scenarios:
+  - name: forbidden_login
+    flow:
+      - post:
+          url: /users/login
+          expect:
+            - statusCode: 403
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+          body: "userId=umuserquenaodeveexistir&pwd=1212332"
+
+
+
+

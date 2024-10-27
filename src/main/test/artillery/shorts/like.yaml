@@ -1,0 +1,98 @@
+config:
+  target: http://127.0.0.1:8080/tukano/rest
+  processor: "./shorts-utils.js"
+  plugins:
+    expect: { }
+    metrics-by-endpoint: {}
+  phases:
+    - name: like_phase
+      duration: 25
+      arrivalRate: 1
+      scenario: like
+#    - name: verify_phase
+#      duration: 1
+#      arrivalRate: 1
+#      scenario: verify_likes_count
+  payload:
+    path: ../data/random_users.csv
+    order: sequence
+    skipHeader: true
+    delimiter: ","
+    skipEmptyLines: true
+    fields:
+      - "userId"
+      - "pwd"
+      - "email"
+      - "displayName"
+
+before:
+  flow:
+    - function: "countPayloadEntries"
+    - log: "Post user that will create the short"
+    - post:
+        url: /users/
+        expect:
+          - statusCode: 200
+        headers:
+          Content-Type: application/json
+        json:
+          id: "star"
+          pwd: "pwdofastar"
+          email: "star@example.com"
+          displayName: "star"
+    - log: "Logging in user"
+    - post:
+        url: /users/login
+        headers:
+          Content-Type: application/x-www-form-urlencoded
+        body: "userId=star&pwd=pwdofastar"
+        expect:
+          - statusCode: 200
+    - log: "Creating a short that all users will like"
+    - post:
+        url: /shorts/star
+        headers:
+          Content-Type: application/json
+        json:
+          title: "Sample Short"
+        expect:
+          - statusCode: 200
+        afterResponse: "saveBlobUrl"
+
+scenarios:
+  - name: like
+    flow:
+      - log: "Logging in user"
+      - post:
+          url: /users/login
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+          body: "userId={{userId}}&pwd={{pwd}}"
+          expect:
+            - statusCode: 200
+      - log: "Liking the short shortId: {{shortId}}, blobUrl: {{blobUrl}}"
+      - post:
+          url: /shorts/{{ shortId }}/{{ userId}}/likes
+          headers:
+            Content-Type: application/json
+          body: "true"
+          expect:
+            - statusCode: 204
+
+#  - name: verify_likes_count
+#    flow:
+#      - post:
+#          url: /users/login
+#          headers:
+#            Content-Type: application/x-www-form-urlencoded
+#          body: "userId=star&pwd=pwdofastar"
+#          expect:
+#            - statusCode: 200
+#      - log: "Verifying total like count matches number of posts"
+#      - get:
+#          url: /shorts/{{ shortId }}/likes
+#          capture:
+#            json: '$'
+#            as: finalLikesResponse
+#          expect:
+#            - statusCode: 200

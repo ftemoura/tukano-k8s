@@ -1,0 +1,33 @@
+config:
+  target: http://127.0.0.1:8080/tukano/rest
+  processor: "./shorts-utils.js"
+  plugins:
+    expect: { }
+    metrics-by-endpoint: {}
+  phases:
+    - name: verify_phase
+      duration: 1
+      arrivalRate: 1
+      scenario: verify_likes_count
+
+scenarios:
+  - name: verify_likes_count
+    flow:
+      - post:
+          url: /users/login
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+          body: "userId=star&pwd=pwdofastar"
+          expect:
+            - statusCode: 200
+      - log: "Verifying total like count matches number of posts"
+      - get:
+          url: /shorts/star+e65a0007-4804-4ed4-ae49-9fc055cae87f/likes
+          capture:
+            json: '$'
+            as: finalLikesResponse
+          expect:
+            - statusCode: 200
+            - equals:
+              - '{{ finalLikesResponse.length }}'
+              - '25'

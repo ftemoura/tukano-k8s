@@ -24,6 +24,8 @@ scenarios:
     flow:
       - post:
           url: /users/
+          expect:
+            - statusCode: 200
           headers:
             Content-Type: application/json
           json:
@@ -31,3 +33,14 @@ scenarios:
             pwd: "{{ pwd }}"
             email: "{{ email }}"
             displayName: "{{ displayName }}"
+      - post:
+          url: /users/
+          expect:
+            - statusCode: 409
+          headers:
+            Content-Type: application/json
+          json:
+            id: "{{ userId }}" # this parameter is filled from the fields above
+            pwd: "{{ pwd }}asd"
+            email: "{{ email }}affsafsa"
+            displayName: "{{ displayName }}sadsdasad"

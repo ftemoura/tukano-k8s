@@ -1,0 +1,53 @@
+config:
+  target: http://127.0.0.1:8080/tukano/rest
+  plugins:
+    expect: { }
+    metrics-by-endpoint: {}
+  phases:
+    - name: simple_post
+      duration: 25
+      arrivalRate: 1
+  payload:
+    path: ../data/random_users.csv
+    order: sequence
+    skipHeader: true
+    delimiter: ","
+    skipEmptyLines: true
+    fields:
+      - "userId"
+      - "pwd"
+      - "email"
+      - "displayName"
+
+before:
+  flow:
+    - log: "Post user that will be followed"
+    - post:
+        url: /users/
+        expect:
+          - statusCode: 200
+        headers:
+          Content-Type: application/json
+        json:
+          id: "star" # this parameter is filled from the fields above
+          pwd: "pwdofastar"
+          email: "star@example.com"
+          displayName: "star"
+scenarios:
+  - name: follow
+    flow:
+      - log: "Following user 'star'"
+      - post:
+          url: /users/login
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+          body: "userId={{userId}}&pwd={{pwd}}"
+          expect:
+            - statusCode: 200
+      - post:
+          url: /shorts/{{userId}}/star/followers
+          headers:
+            Content-Type: application/json
+          body: "true"
+          expect:
+            - statusCode: 204

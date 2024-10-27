@@ -1,10 +1,11 @@
 config:
   target: http://127.0.0.1:8080/tukano/rest
+  processor: "./shorts-utils.js"
   plugins:
     expect: { }
-    metrics-by-endpoint: { }
+    metrics-by-endpoint: {}
   phases:
-    - name: simple_get
+    - name: simple_post
       duration: 25
       arrivalRate: 1
   payload:
@@ -19,15 +20,17 @@ config:
       - "email"
       - "displayName"
 scenarios:
-  - name: TuKanoHome
+  - name: create a short
     flow:
       - post:
           url: /users/login
+          expect:
+            - statusCode: 200
           headers:
             Content-Type: application/x-www-form-urlencoded
           body: "userId={{ userId }}&pwd={{ pwd }}"
-      - log: "Login successful, proceeding to fetch user data."
-      - delete:
-          url: /users/{{ userId }}
+      - log: "Login successful, proceeding to like a short."
+      - get:
+          url: /shorts/{{ userId }}/feed
           expect:
             - statusCode: 200

@@ -17,8 +17,12 @@ scenarios:
           headers:
             Content-Type: application/x-www-form-urlencoded
           body: "userId=user1&pwd=Pwd123!@#"
+          expect:
+              - statusCode: 200
       - get:
           url: /users/user1
+          expect:
+            - statusCode: 200
 
 
 

@@ -24,14 +24,13 @@ scenarios:
     flow:
       - post: # This is for the login request
           url: /users/login
+          expect:
+            - statusCode: 200
           headers:
             Content-Type: application/x-www-form-urlencoded # Explicitly set the content type
           body: "userId={{ userId }}&pwd={{ pwd }}" # Manually constructing the body
-          capture:
-            cookies: cookies # Capture cookies to store them
-            as: cookies
-
       - get: # This is to fetch user data after login
           url: /users/{{ userId }} # Ensure the URL is correct
-          headers:
-            Cookie: "{{ cookies }}" # Use captured cookies here
+          expect:
+            - statusCode: 200
+

@@ -23,14 +23,17 @@ scenarios:
     flow:
       - post:
           url: /users/login
+          expect:
+            - statusCode: 200
           headers:
             Content-Type: application/x-www-form-urlencoded
           body: "userId={{ userId }}&pwd={{ pwd }}"
       - log: "Login successful, proceeding to update user data."
       - put:
           url: /users/{{ userId }}
+          expect:
+            - statusCode: 200
           headers:
-            Cookie: "{{ cookies }}"
             Content-Type: application/json
           json:
             id: "{{ userId }}"
