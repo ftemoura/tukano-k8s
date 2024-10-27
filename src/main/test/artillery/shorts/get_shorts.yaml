@@ -55,7 +55,7 @@ scenarios:
             - statusCode: 200
             - contentType: json
             - equals:
-                - '1'
+                - '2'
                 - '{{ shortsResponse.length }}'
       - log: "get short successful"
 

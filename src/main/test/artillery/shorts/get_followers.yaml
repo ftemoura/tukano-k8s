@@ -4,32 +4,13 @@ config:
     expect: { }
     metrics-by-endpoint: {}
   phases:
-    - name: simple_post
-      duration: 1
+    - name: follow star
+      duration: 25
       arrivalRate: 1
-  payload:
-    path: ../data/random_users.csv
-    order: sequence
-    skipHeader: true
-    delimiter: ","
-    skipEmptyLines: true
-    fields:
-      - "userId"
-      - "pwd"
-      - "email"
-      - "displayName"
 
 scenarios:
   - name: follow
     flow:
-      - log: "Following user 'star'"
-      - post:
-          url: /users/login
-          headers:
-            Content-Type: application/x-www-form-urlencoded
-          body: "userId={{userId}}&pwd={{pwd}}"
-          expect:
-            - statusCode: 200
       - post:
           url: /users/login
           headers:
