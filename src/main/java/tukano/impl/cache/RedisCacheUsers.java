@@ -12,7 +12,7 @@ public class RedisCacheUsers extends RedisCache implements UsersCache {
 
     @Override
     public void cacheUser(User user) {
-        String cacheKey = SHORT_KEY + user.getId();
+        String cacheKey = SHORT_KEY + user.getUserId();
         super.setKeyValue(cacheKey, JSON.encode(user), user.getLastModified(), USERS_TTL);
     }
 

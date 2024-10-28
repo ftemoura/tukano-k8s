@@ -22,9 +22,9 @@ import tukano.impl.cache.RedisCacheShorts;
 import tukano.impl.cache.ShortsCache;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
+import tukano.impl.database.PostegreShorts;
+import tukano.impl.database.ShortsDatabse;
 import tukano.impl.rest.MainApplication;
-import tukano.impl.rest.TukanoRestServer;
-import utils.DB;
 import utils.FakeSecurityContext;
 
 public class JavaShorts implements Shorts {
@@ -32,6 +32,8 @@ public class JavaShorts implements Shorts {
 	private static Logger Log = Logger.getLogger(JavaShorts.class.getName());
 
 	private ShortsCache cache;
+
+	private ShortsDatabse dbImpl;
 	private static Shorts instance;
 	
 	synchronized public static Shorts getInstance() {
@@ -42,6 +44,7 @@ public class JavaShorts implements Shorts {
 	
 	private JavaShorts() {
 		this.cache = new RedisCacheShorts();
+		this.dbImpl = new PostegreShorts();
 	}
 	
 	@Override
@@ -53,7 +56,7 @@ public class JavaShorts implements Shorts {
 			var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
 			var shrt = new Short(shortId, userId, blobUrl);
 
-			return errorOrValue(DB.insertOne(shrt), s -> s.copyWithLikes_And_Token(0));
+			return errorOrValue(dbImpl.createShort(shrt), s -> s.copyWithLikes_And_Token(0));
 		});
 
 		if(result.isOK()) {
@@ -76,9 +79,8 @@ public class JavaShorts implements Shorts {
 		Result<Short> caheRes = this.cache.getShort(shortId);
 		if(caheRes.isOK())
 			return caheRes;
-		var query = format("SELECT count(*) FROM Likes l WHERE l.shortId = '%s'", shortId);
-		var likes = DB.sql(query, Long.class);
-		Result<Short> bdRes = errorOrValue( getOne(shortId, Short.class), shrt -> shrt.copyWithLikes_And_Token( likes.get(0)));
+		var likes = dbImpl.getLikesCount(shortId);
+		Result<Short> bdRes = errorOrValue(dbImpl.getShort(shortId), shrt -> shrt.copyWithLikes_And_Token( likes));
 		if(bdRes.isOK()) {
 			Executors.defaultThreadFactory().newThread(() -> {
 				Short shrt = bdRes.value();
@@ -94,19 +96,9 @@ public class JavaShorts implements Shorts {
 		Log.info(() -> format("deleteShort : shortId = %s\n", shortId));
 		
 		Result<Void> bdRes = errorOrResult( getShort(shortId), shrt -> {
-			
 			return errorOrResult( okUser( shrt.getOwnerId(), sc), user -> {
-				return DB.transaction( hibernate -> {
-
-					hibernate.remove( shrt);
-					
-					var query = format("DELETE Likes l WHERE l.shortId = '%s'", shortId);
-					hibernate.createMutationQuery(query).executeUpdate();
-					var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
-					//TODO e se o delete falhar?
-					JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, blobUrl) );
-				});
-			});	
+				return dbImpl.deleteShort(shrt);
+			});
 		});
 
 		if (bdRes.isOK())
@@ -125,8 +117,7 @@ public class JavaShorts implements Shorts {
 		if(cacheRes.isOK())
 			return cacheRes;
 
-		var query = format("SELECT s.shortId FROM Short s WHERE s.ownerId = '%s'", userId);
-		Result<List<String>> bdRes = errorOrValue( okUser(userId), DB.sql( query, String.class));
+		Result<List<String>> bdRes = errorOrValue( okUser(userId), dbImpl.getShorts(userId));
 		if (bdRes.isOK()) {
 			Executors.defaultThreadFactory().newThread(() -> {
 				this.cache.cacheShorts(userId, bdRes.value());
@@ -141,7 +132,7 @@ public class JavaShorts implements Shorts {
 
 		Result<Void> bdRes = errorOrResult( okUser(userId1, sc), user -> {
 			var f = new Following(userId1, userId2);
-			return errorOrVoid( okUser( userId2), isFollowing ? DB.insertOne( f ) : DB.deleteOne( f ));	
+			return errorOrVoid( okUser( userId2), dbImpl.follow(f, isFollowing));
 		});
 
 		if(bdRes.isOK()) {
@@ -161,8 +152,7 @@ public class JavaShorts implements Shorts {
 		if (cacheRes.isOK())
 			return cacheRes;
 
-		var query = format("SELECT f.follower FROM Following f WHERE f.followee = '%s'", userId);		
-		Result<List<String>> bdRes = errorOrValue( okUser(userId, sc), DB.sql(query, String.class));
+		Result<List<String>> bdRes = errorOrValue( okUser(userId, sc), dbImpl.followers(userId));
 
 		if (bdRes.isOK()) {
 			Executors.defaultThreadFactory().newThread(() -> {
@@ -179,7 +169,7 @@ public class JavaShorts implements Shorts {
 		
 		Result<Void> bdRes = errorOrResult( getShort(shortId), shrt -> {
 			var l = new Likes(userId, shortId, shrt.getOwnerId());
-			return errorOrVoid( okUser( userId, sc), isLiked ? DB.insertOne( l ) : DB.deleteOne( l ));
+			return errorOrVoid( okUser( userId, sc), dbImpl.like(l, isLiked));
 		});
 
 		if (bdRes.isOK()) {
@@ -199,8 +189,7 @@ public class JavaShorts implements Shorts {
 			return cacheRes;
 
 		Result<List<String>> bdRes = errorOrResult( getShort(shortId), shrt -> {
-			var query = format("SELECT l.userId FROM Likes l WHERE l.shortId = '%s'", shortId);
-			return errorOrValue( okUser( shrt.getOwnerId(), sc ), DB.sql(query, String.class));
+			return errorOrValue( okUser( shrt.getOwnerId(), sc ), dbImpl.likes(shortId));
 		});
 		if (bdRes.isOK()) {
 			Executors.defaultThreadFactory().newThread(() -> {
@@ -217,15 +206,7 @@ public class JavaShorts implements Shorts {
 		if (cacheRes.isOK())
 			return cacheRes;
 
-		final var QUERY_FMT = """
-				SELECT s.shortId, s.timestamp FROM Short s WHERE	s.ownerId = '%s'				
-				UNION			
-				SELECT s.shortId, s.timestamp FROM Short s, Following f 
-					WHERE 
-						f.followee = s.ownerId AND f.follower = '%s' 
-				ORDER BY s.timestamp DESC""";
-
-		Result<List<String>> bdRes = errorOrValue( okUser( userId, sc), DB.sql( format(QUERY_FMT, userId, userId), String.class));
+		Result<List<String>> bdRes = errorOrValue( okUser( userId, sc), dbImpl.getFeed(userId));
 
 		if (bdRes.isOK()) {
 			Executors.defaultThreadFactory().newThread(() -> {
@@ -254,21 +235,7 @@ public class JavaShorts implements Shorts {
 		if( ! Token.isValid( token, Token.Service.INTERNAL, userId ) )
 			return error(FORBIDDEN);
 
-		return DB.transaction( (hibernate) -> {
-						
-			//delete shorts
-			var query1 = format("DELETE Short s WHERE s.ownerId = '%s'", userId);
-			hibernate.createMutationQuery(query1).executeUpdate();
-
-			//delete follows
-			var query2 = format("DELETE Following f WHERE f.follower = '%s' OR f.followee = '%s'", userId, userId);
-			hibernate.createMutationQuery(query2).executeUpdate();
-			
-			//delete likes
-			var query3 = format("DELETE Likes l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
-			hibernate.createMutationQuery(query3).executeUpdate();
-			
-		});
+		return dbImpl.deleteAllShorts(userId, token);
 	}
 	
 }

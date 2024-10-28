@@ -18,7 +18,6 @@ import tukano.api.User;
 import tukano.api.Users;
 import tukano.impl.cache.RedisCacheUsers;
 import tukano.impl.cache.UsersCache;
-import tukano.impl.database.CosmosBDUsers;
 import tukano.impl.database.PostegreUsers;
 import tukano.impl.database.UsersDatabase;
 
@@ -56,7 +55,7 @@ public class JavaUsers implements Users {
 				cache.cacheUser(bdRes.value());
 			}).start();
 		}
-		return errorOrValue(bdRes, user.getId());
+		return errorOrValue(bdRes, user.getUserId());
 	}
 
 	@Override
@@ -148,10 +147,10 @@ public class JavaUsers implements Users {
 
 
 	private boolean badUserInfo( User user) {
-		return (user.getId() == null || user.pwd() == null || user.displayName() == null || user.email() == null);
+		return (user.getUserId() == null || user.pwd() == null || user.displayName() == null || user.email() == null);
 	}
 	
 	private boolean badUpdateUserInfo( String userId, User info) {
-		return (userId == null ||  info.getId() != null && ! userId.equals( info.getId()));
+		return (userId == null ||  info.getUserId() != null && ! userId.equals( info.getUserId()));
 	}
 }

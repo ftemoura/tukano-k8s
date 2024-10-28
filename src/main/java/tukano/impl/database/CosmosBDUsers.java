@@ -25,7 +25,7 @@ public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
     private static CosmosBDUsers instance;
 
     public CosmosBDUsers() {
-        super(CONTAINER_NAME);
+        super();
     }
 
     public static synchronized CosmosDBLayer getInstance() {
@@ -36,7 +36,7 @@ public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
 
     @Override
     public Result<User> createUser(User user) {
-        return super.insertOne(user);
+        return super.insertOne(user, CONTAINER_NAME);
     }
 
     @Override
@@ -46,20 +46,20 @@ public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
 
     @Override
     public Result<User> getUser(String userId) {
-         return super.getOne(userId, User.class);
+         return super.getOne(userId,CONTAINER_NAME, User.class);
     }
 
     @Override
     public Result<User> updateUser(String userId, User other) {
-        return errorOrResult( super.getOne( userId, User.class), user -> super.updateOne( user.updateFrom(other)));
+        return errorOrResult( super.getOne( userId, CONTAINER_NAME, User.class), user -> super.updateOne( user.updateFrom(other), CONTAINER_NAME));
     }
 
     @Override
     public Result<User> deleteUser(String userId) {
-        Result<UserDAO> r = super.getOne(userId, UserDAO.class);
+        Result<UserDAO> r = super.getOne(userId, CONTAINER_NAME, UserDAO.class);
         Log.info(()-> format("deleteUser : %s\n", JSON.encode(r.value())));
         return errorOrResult(r, userDAO -> {
-            Result<User> res = super.deleteOne(userDAO, userDAO.get_etag());
+            Result<User> res = super.deleteOne(userDAO, CONTAINER_NAME, userDAO.get_etag());
             if(res.isOK()) {
                 JavaShorts.getInstance().deleteAllShorts(userId,Token.get(Token.Service.INTERNAL, userId));
                 JavaBlobs.getInstance().deleteAllBlobs(userId,Token.get(Token.Service.INTERNAL, userId));
@@ -72,7 +72,7 @@ public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
     @Override
     public Result<List<User>> searchUsers(String pattern) {
         var query = format("SELECT * FROM c WHERE CONTAINS(UPPER(c.userId), '%s')", pattern.toUpperCase());
-        Result<List<User>> res = super.query(query, User.class);
+        Result<List<User>> res = super.query(query, CONTAINER_NAME, User.class);
         if(!res.isOK()) return res;
         return ok(res.value()
                 .stream()

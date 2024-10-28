@@ -74,4 +74,12 @@ public class ConfigLoader {
     public String getCosmosDBShortsContainer() {
         return properties.getProperty("azure.cosmosDBShortsContainer");
     }
+
+    public String getCosmosDBLikesContainer() {
+        return properties.getProperty("azure.cosmosDBLikesContainer");
+    }
+
+    public String getCosmosDBFollowsContainer() {
+        return properties.getProperty("azure.cosmosDBFollowsContainer");
+    }
 }
