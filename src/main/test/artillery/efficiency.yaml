@@ -1,0 +1,160 @@
+config:
+  target: http://127.0.0.1:8080/tukano/rest
+  processor: "./shorts/shorts-utils.js"
+  plugins:
+    expect: { }
+    metrics-by-endpoint: { }
+  phases:
+    - name: simple_get
+      duration: 25
+      arrivalRate: 25
+  payload:
+    path: ./data/random_users.csv
+    order: sequence
+    #loadAll: true
+    skipHeader: true
+    delimiter: ","
+    skipEmptyLines: true
+    fields:
+      - "userId"
+      - "pwd"
+      - "email"
+      - "displayName"
+
+before:
+  flow:
+    - log: "Post user that will be followed"
+    - post:
+        url: /users/
+        expect:
+          - statusCode: 200
+        headers:
+          Content-Type: application/json
+        json:
+          id: "star"
+          pwd: "pwdofastar"
+          email: "star@example.com"
+          displayName: "star"
+
+scenarios:
+  - name: TuKanoHome
+    flow:
+      - log: "creating user {{ userId }}"
+      - post:
+          url: /users/
+          expect:
+            - statusCode: 200
+          headers:
+            Content-Type: application/json
+          json:
+            id: "{{ userId }}"
+            pwd: "{{ pwd }}"
+            email: "{{ email }}"
+            displayName: "{{ displayName }}"
+      - log: "logging in as {{ userId }}"
+      - post:
+          url: /users/login
+          expect:
+            - statusCode: 200
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+          body: "userId={{ userId }}&pwd={{ pwd }}"
+      - log: "fetching user data for {{ userId }}"
+      - get:
+          url: /users/{{ userId }}
+          expect:
+            - statusCode: 200
+      - log: "updating user data for {{ userId }}"
+      - put:
+         url: /users/{{ userId }}
+         expect:
+           - statusCode: 200
+         headers:
+           Content-Type: application/json
+         json:
+           id: "{{ userId }}"
+           pwd: "{{ pwd }}"
+           email: "updated_{{ email }}"
+           displayName: "{{ displayName }}_updated"
+      - log: "searching for user {{ userId }}"
+      - get:
+          url: /users?query=user1
+          capture:
+            - json: '$'
+              as: response
+          expect:
+            - statusCode: 200
+            - contentType: json
+      - log: "create short for user {{ userId }}"
+      - post:
+         url: /shorts/{{ userId }}
+         expect:
+           - statusCode: 200
+         capture:
+           json: '$'
+           as: bloCreationResponse
+      - log: "Short created successfully. Let's upload it {{ bloCreationResponse.blobUrl }}"
+      - post:
+           url: "{{ bloCreationResponse.blobUrl }}"
+           expect:
+             - statusCode: 204
+           headers:
+             Content-Type: application/octet-stream
+           beforeRequest: 'addMultipartFormData'
+      - log: "Short uploaded successfully."
+      - log: "Following user 'star'"
+      - post:
+          url: /users/login
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+          body: "userId={{userId}}&pwd={{pwd}}"
+          expect:
+            - statusCode: 200
+      - log: "get followers for user star"
+      - post:
+          url: /shorts/{{userId}}/star/followers
+          headers:
+            Content-Type: application/json
+          body: "true"
+          expect:
+            - statusCode: 204
+      - log: "get short for user {{ userId }}"
+      - get:
+          url: /shorts/{{ bloCreationResponse.shortId }}
+          expect:
+            - statusCode: 200
+      - log: "get shorts for user {{ userId }}"
+      - get:
+          url: /shorts/{{ userId }}/shorts
+          capture:
+            json: '$'
+            as: shortsResponse
+          expect:
+            - statusCode: 200
+            - contentType: json
+      - log: "get the likes for the short"
+      - post:
+          url: /shorts/{{ bloCreationResponse.shortId }}/{{ userId}}/likes
+          headers:
+            Content-Type: application/json
+          body: "true"
+          expect:
+            - statusCode: 204
+      - log: "get the feed"
+      - get:
+          url: /shorts/{{ userId }}/feed
+          expect:
+            - statusCode: 200
+      - log: "Let's delete the short."
+      - delete:
+          url: /shorts/{{ bloCreationResponse.shortId }}
+          expect:
+            - statusCode: 204
+      - log: "Short deleted successfully."
+      - log: "Let's delete the user."
+      - delete:
+          url: /users/{{ userId }}
+          expect:
+            - statusCode: 200
+
+
