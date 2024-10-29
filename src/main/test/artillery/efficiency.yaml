@@ -6,8 +6,8 @@ config:
     metrics-by-endpoint: { }
   phases:
     - name: simple_get
-      duration: 25
-      arrivalRate: 25
+      duration: 1
+      arrivalRate: 1
   payload:
     path: ./data/random_users.csv
     order: sequence
@@ -120,7 +120,7 @@ scenarios:
             - statusCode: 204
       - log: "get short for user {{ userId }}"
       - get:
-          url: /shorts/{{ bloCreationResponse.shortId }}
+          url: /shorts/{{ bloCreationResponse.id }}
           expect:
             - statusCode: 200
       - log: "get shorts for user {{ userId }}"
@@ -134,7 +134,7 @@ scenarios:
             - contentType: json
       - log: "get the likes for the short"
       - post:
-          url: /shorts/{{ bloCreationResponse.shortId }}/{{ userId}}/likes
+          url: /shorts/{{ bloCreationResponse.id }}/{{ userId}}/likes
           headers:
             Content-Type: application/json
           body: "true"
@@ -147,7 +147,7 @@ scenarios:
             - statusCode: 200
       - log: "Let's delete the short."
       - delete:
-          url: /shorts/{{ bloCreationResponse.shortId }}
+          url: /shorts/{{ bloCreationResponse.id }}
           expect:
             - statusCode: 204
       - log: "Short deleted successfully."

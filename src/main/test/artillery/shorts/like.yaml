@@ -70,9 +70,9 @@ scenarios:
           body: "userId={{userId}}&pwd={{pwd}}"
           expect:
             - statusCode: 200
-      - log: "Liking the short shortId: {{shortId}}, blobUrl: {{blobUrl}}"
+      - log: "Liking the short shortId: {{id}}, blobUrl: {{blobUrl}}"
       - post:
-          url: /shorts/{{ shortId }}/{{ userId}}/likes
+          url: /shorts/{{ id }}/{{ userId}}/likes
           headers:
             Content-Type: application/json
           body: "true"

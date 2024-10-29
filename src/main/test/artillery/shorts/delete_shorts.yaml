@@ -47,7 +47,7 @@ scenarios:
           beforeRequest: 'addMultipartFormData'
       - log: "Short uploaded successfully. Let's delete it."
       - delete:
-          url: /shorts/{{ response.shortId }}
+          url: /shorts/{{ response.id }}
           expect:
               - statusCode: 204
       - log: "Short deleted successfully."
