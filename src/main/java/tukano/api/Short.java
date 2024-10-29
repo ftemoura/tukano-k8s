@@ -9,7 +9,11 @@ import jakarta.persistence.Id;
 import org.hibernate.annotations.UpdateTimestamp;
 import tukano.impl.Token;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 /**
  * Represents a Short video uploaded by an user.
@@ -24,9 +28,9 @@ import java.time.LocalDateTime;
 public class Short {
 
 	@UpdateTimestamp
-	@JsonSerialize(using = LocalDateTimeSerializer.class)
-	@JsonIgnore
-	private LocalDateTime lastModified;
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+	private String _ts;
+
 	@Id
 	@JsonProperty("id")
 	String shortId;
@@ -90,22 +94,37 @@ public class Short {
 		this.totalLikes = totalLikes;
 	}
 
+	@JsonIgnore
 	public LocalDateTime getLastModified() {
-		return lastModified;
+		if (_ts == null) return null;
+
+		try {
+			// Check if _ts is a numeric string representing seconds since epoch
+			if (_ts.matches("\\d+")) {
+				Instant instant = Instant.ofEpochSecond(Long.parseLong(_ts));
+				return instant.atZone(ZoneId.systemDefault()).toLocalDateTime();
+			} else {
+				// Use a custom formatter that matches 'yyyy-MM-dd HH:mm:ss.SSSSSS'
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
+				return LocalDateTime.parse(_ts, formatter);
+			}
+		} catch (DateTimeParseException e) {
+			throw new IllegalArgumentException("Invalid format for _ts: " + _ts, e);
+		}
 	}
-	public void setLastModified(LocalDateTime t) {
-		this.lastModified = t;
+	public void setLastModified(String t) {
+		this._ts = t;
 	}
 	@Override
 	public String toString() {
 		return "Short [shortId=" + shortId + ", ownerId=" + ownerId + ", blobUrl=" + blobUrl + ", timestamp="
-				+ timestamp + ", totalLikes=" + totalLikes + ", " + lastModified +"]";
+				+ timestamp + ", totalLikes=" + totalLikes + ", " + _ts +"]";
 	}
 	
 	public Short copyWithLikes_And_Token( long totLikes) { // TODO token fix (maybe not working)
 		var urlWithToken = String.format("%s?token=%s", blobUrl, Token.get(Token.Service.BLOBS, blobUrl));
 		Short shr = new Short( shortId, ownerId, urlWithToken, timestamp, (int)totLikes);
-		shr.setLastModified(lastModified);
+		shr.setLastModified(_ts);
 		return shr;
 	}	
 }

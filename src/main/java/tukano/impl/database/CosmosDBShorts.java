@@ -61,7 +61,7 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
 
     @Override
     public Result<List<String>> getShorts(String userId) {
-        String query = format("SELECT s.shortId FROM s WHERE s.ownerId = %s", userId);
+        String query = format("SELECT %s.id FROM %s WHERE %s.ownerId = %s",SHORTS_CONTAINER_NAME, SHORTS_CONTAINER_NAME, SHORTS_CONTAINER_NAME, userId);
         Result<List<Short>> shrts = super.query(query, SHORTS_CONTAINER_NAME, Short.class);
         if (!shrts.isOK()) return error(shrts.error());
         return ok(shrts.value().stream().map(Short::getShortId).toList());
@@ -94,7 +94,7 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
 
     @Override
     public Result<List<String>> likes(String shortId) {
-        String query = format("SELECT likes.id FROM likes WHERE likes.shortId = '%s'", shortId);
+        String query = format("SELECT %s.id FROM %s WHERE %s.shortId = '%s'", LIKES_CONTAINER_NAME, LIKES_CONTAINER_NAME, LIKES_CONTAINER_NAME, shortId);
         Result<List<Likes>> likes = super.query(query, LIKES_CONTAINER_NAME, Likes.class);
         if(!likes.isOK()) return error(likes.error());
         return ok(likes.value().stream().map(Likes::getUserId).toList());
