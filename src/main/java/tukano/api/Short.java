@@ -1,6 +1,7 @@
 package tukano.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import jakarta.persistence.Entity;
@@ -27,6 +28,7 @@ public class Short {
 	@JsonIgnore
 	private LocalDateTime lastModified;
 	@Id
+	@JsonProperty("id")
 	String shortId;
 	String ownerId;
 	String blobUrl;

@@ -64,6 +64,13 @@ public abstract class CosmosDBLayer {
         }, 3, 1000));
     }
 
+    public <T> Result<T> deleteOne(T obj, String containerName) {
+        return tryCatch(() -> {
+            getContainer(containerName).deleteItem(obj, new CosmosItemRequestOptions());
+            return obj;
+        });
+    }
+
     public <T> Result<T> updateOne(T obj, String containerName) {
         return tryCatch(() -> getContainer(containerName).upsertItem(obj).getItem());
     }

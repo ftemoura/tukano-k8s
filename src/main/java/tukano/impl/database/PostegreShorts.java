@@ -30,7 +30,6 @@ public class PostegreShorts implements ShortsDatabse{
             var query = format("DELETE Likes l WHERE l.shortId = '%s'", shortId);
             hibernate.createMutationQuery(query).executeUpdate();
             var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
-            //TODO e se o delete falhar?
             JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, blobUrl) );
         });
     }
