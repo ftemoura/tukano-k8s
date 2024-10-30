@@ -1,10 +1,7 @@
 package tukano.impl.database;
 
 import com.azure.cosmos.*;
-import com.azure.cosmos.models.CosmosItemRequestOptions;
-import com.azure.cosmos.models.CosmosItemResponse;
-import com.azure.cosmos.models.CosmosQueryRequestOptions;
-import com.azure.cosmos.models.PartitionKey;
+import com.azure.cosmos.models.*;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import tukano.api.Result;
 import utils.ConfigLoader;
@@ -100,6 +97,18 @@ public abstract class CosmosDBLayer {
     public <T> Result<List<T>> query(String queryStr, String containerName, Class<T> clazz) {
         return tryCatch(() -> {
             var res = getContainer(containerName).queryItems(queryStr, new CosmosQueryRequestOptions(), clazz);
+            return res.stream().toList();
+        });
+    }
+    public <T> Result<List<T>> query(String queryStr, String containerName, Map<String, Object> parameters, Class<T> clazz) {
+        return tryCatch(() -> {
+            List<SqlParameter> sqlParameters = parameters.entrySet().stream()
+                    .map(entry -> new SqlParameter(entry.getKey(), entry.getValue()))
+                    .toList();
+
+            SqlQuerySpec querySpec = new SqlQuerySpec(queryStr, sqlParameters);
+            var res = getContainer(containerName).queryItems(querySpec, new CosmosQueryRequestOptions(), clazz);
+
             return res.stream().toList();
         });
     }

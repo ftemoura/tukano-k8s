@@ -71,7 +71,7 @@ public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
 
     @Override
     public Result<List<User>> searchUsers(String pattern) {
-        var query = format("SELECT * FROM c WHERE CONTAINS(UPPER(c.userId), '%s')", pattern.toUpperCase());
+        var query = format("SELECT * FROM %s c WHERE CONTAINS(UPPER(c.id), '%s')", CONTAINER_NAME, pattern.toUpperCase());
         Result<List<User>> res = super.query(query, CONTAINER_NAME, User.class);
         if(!res.isOK()) return res;
         return ok(res.value()

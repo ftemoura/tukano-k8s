@@ -5,11 +5,15 @@ import tukano.api.Short;
 import tukano.impl.JavaBlobs;
 import tukano.impl.Token;
 import tukano.impl.data.Following;
+import tukano.impl.data.FollowingDAO;
 import tukano.impl.data.Likes;
+import tukano.impl.data.LikesDAO;
 import tukano.impl.rest.MainApplication;
 import utils.ConfigLoader;
 
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import static java.lang.String.format;
@@ -71,7 +75,8 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
 
     @Override
     public Result<Following> follow(Following f, boolean isFollowing) {//TODO é preciso transação?
-        return isFollowing? super.insertOne(f, FOLLOWS_CONTAINER_NAME) : super.deleteOne(f, FOLLOWS_CONTAINER_NAME);
+        FollowingDAO followingDAO = new FollowingDAO(f);
+        return isFollowing? super.insertOne(followingDAO, FOLLOWS_CONTAINER_NAME) : super.deleteOne(followingDAO, FOLLOWS_CONTAINER_NAME);
     }
 
     @Override
@@ -84,12 +89,13 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
 
     @Override
     public Result<Likes> like(Likes l, boolean isLiked) {//TODO é preciso transação?
-        return isLiked ? super.insertOne(l, LIKES_CONTAINER_NAME) : super.deleteOne(l, LIKES_CONTAINER_NAME);
+        LikesDAO likesDAO = new LikesDAO(l);
+        return isLiked ? super.insertOne(likesDAO, LIKES_CONTAINER_NAME) : super.deleteOne(likesDAO, LIKES_CONTAINER_NAME);
     }
 
     @Override
     public Result<List<String>> likes(String shortId) {
-        String query = format("SELECT c.id FROM %s c WHERE c.shortId = '%s'", LIKES_CONTAINER_NAME, shortId);
+        String query = format("SELECT c.userId FROM %s c WHERE c.shortId = '%s'", LIKES_CONTAINER_NAME, shortId);
         Result<List<Likes>> likes = super.query(query, LIKES_CONTAINER_NAME, Likes.class);
         if(!likes.isOK()) return error(likes.error());
         return ok(likes.value().stream().map(Likes::getUserId).toList());
@@ -97,31 +103,27 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
 
     @Override
     public Result<List<String>> getFeed(String userId) {
-//        String ownShorts = format("SELECT c.id FROM %s c WHERE c.ownerId = '%s'", SHORTS_CONTAINER_NAME, userId);
-//        Result<List<Short>> shrts = super.query(ownShorts, SHORTS_CONTAINER_NAME, Short.class);
-//
-//        String followeesQuery = format("SELECT c.followee FROM %s c WHERE c.follower = '%s'", FOLLOWS_CONTAINER_NAME, userId);
-//        Result<List<Following>> followees = super.query(followeesQuery, FOLLOWS_CONTAINER_NAME, Following.class);
-//        if (followees.isOK()) {
-//            List<Following> f = followees.value();
-//            List<Short> followeesShorts = f.forEach(followee -> {
-//                String query = format()
-//            });
-//        }
+        String query = format("SELECT c.id FROM %s c WHERE c.follower = '%s'", FOLLOWS_CONTAINER_NAME, userId);
+        Result<List<Following>> follows = super.query(query, FOLLOWS_CONTAINER_NAME, Following.class);
+        if(!follows.isOK()) return error(follows.error());
+        List<String> followees = new LinkedList<>(follows.value().stream().map(Following::getFollowee).toList());
+        followees.add(userId);
 
-        return null;
+        Map<String, Object> params = Map.of("followees", followees);
+        String query2 = format("SELECT c.id FROM %s c WHERE c.ownerId IN @followees", SHORTS_CONTAINER_NAME);
+        Result<List<Short>> shrts = super.query(query2, SHORTS_CONTAINER_NAME, params, Short.class);
+        if(!shrts.isOK()) return error(shrts.error());
+        return ok(shrts.value().stream().map(Short::getShortId).toList());
     }
 
     @Override
     public Result<Void> deleteAllShorts(String userId, String token) {// TODO como é que vamos fazer uma transação aqui?
-        String query1 = format("DELETE * FROMM %s c WHERE c.ownerId='%s'", SHORTS_CONTAINER_NAME, userId);
-        super.query(query1, LIKES_CONTAINER_NAME, Void.class);
-
-        String query2 = format("DELETE * FROM %s c WHERE c.follower='%s' OR c.followee='%s'", FOLLOWS_CONTAINER_NAME, userId, userId);
-        super.query(query2, FOLLOWS_CONTAINER_NAME, Void.class);
-
-        String query3 = format("DELETE * FROM %s c WHERE c.ownerId = '%s' OR c.userId = '%s'", LIKES_CONTAINER_NAME, userId, userId);
-        super.query(query3, LIKES_CONTAINER_NAME, Void.class);
+        String query1 = format("SELECT c.id FROM %s c WHERE c.ownerId = '%s'", SHORTS_CONTAINER_NAME, userId);
+        super.query(query1, SHORTS_CONTAINER_NAME, Short.class);
+        String query2 = format("SELECT c.id FROM %s c WHERE c.follower = '%s' OR c.followee = '%s'", FOLLOWS_CONTAINER_NAME, userId, userId);
+        super.query(query2, FOLLOWS_CONTAINER_NAME, Following.class);
+        String query3 = format("SELECT c.id FROM %s c WHERE c.ownerId = '%s' OR c.userId = '%s'", LIKES_CONTAINER_NAME, userId, userId);
+        super.query(query3, LIKES_CONTAINER_NAME, Likes.class);
         return ok();
     }
 }
