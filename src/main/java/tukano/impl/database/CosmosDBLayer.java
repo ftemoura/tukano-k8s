@@ -110,6 +110,7 @@ public abstract class CosmosDBLayer {
             return Result.ok(supplierFunc.get());
         } catch (CosmosException ce) {
             ce.printStackTrace();
+            Log.info(Result.error(errorCodeFromStatus(ce.getStatusCode())).toString());
             return Result.error(errorCodeFromStatus(ce.getStatusCode()));
         } catch (Exception  x ) {
             x.printStackTrace();
