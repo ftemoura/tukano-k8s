@@ -66,7 +66,7 @@ public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
             return res;
         });
     }
-    
+
     @Override
     public Result<User> deleteUser(String userId) {
         return super.retry(()->deleteUserWithoutRetry(userId), 3, 1000);

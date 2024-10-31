@@ -11,6 +11,7 @@ import tukano.impl.data.LikesDAO;
 import tukano.impl.rest.MainApplication;
 import utils.ConfigLoader;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import java.util.logging.Logger;
 
 import static java.lang.String.format;
 import static tukano.api.Result.*;
+import static tukano.api.Result.ErrorCode.INTERNAL_ERROR;
 
 public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
     private static Logger Log = Logger.getLogger(CosmosDBShorts.class.getName());
@@ -113,7 +115,7 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
         List<String> followees = new LinkedList<>(follows.value().stream().map(Following::getFollowee).toList());
         followees.add(userId);
 
-        Map<String, Object> params = Map.of("followees", followees);//TODO Put the order by
+        Map<String, Object> params = Map.of("followees", followees);
         String query2 = format("SELECT c.id, c.timestamp FROM %s c WHERE c.ownerId IN @followees ORDER BY c.timestamp DESC", SHORTS_CONTAINER_NAME);
         Result<List<Short>> shrts = super.query(query2, SHORTS_CONTAINER_NAME, params, Short.class);
         if(!shrts.isOK()) return error(shrts.error());
@@ -122,12 +124,63 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
 
     @Override
     public Result<Void> deleteAllShorts(String userId, String token) {// TODO como é que vamos fazer uma transação aqui?
+
         String query1 = format("SELECT c.id FROM %s c WHERE c.ownerId = '%s'", SHORTS_CONTAINER_NAME, userId);
-        super.query(query1, SHORTS_CONTAINER_NAME, Short.class);
+        Result<List<Short>> shortsToDeleteRes = super.query(query1, SHORTS_CONTAINER_NAME, Short.class);
+        if (!shortsToDeleteRes.isOK()) return error(shortsToDeleteRes.error());
+
         String query2 = format("SELECT c.id FROM %s c WHERE c.follower = '%s' OR c.followee = '%s'", FOLLOWS_CONTAINER_NAME, userId, userId);
-        super.query(query2, FOLLOWS_CONTAINER_NAME, Following.class);
+        Result<List<Following>> followsToDeleteRes = super.query(query2, FOLLOWS_CONTAINER_NAME, Following.class);
+        if (!followsToDeleteRes.isOK()) return error(followsToDeleteRes.error());
+
         String query3 = format("SELECT c.id FROM %s c WHERE c.ownerId = '%s' OR c.userId = '%s'", LIKES_CONTAINER_NAME, userId, userId);
-        super.query(query3, LIKES_CONTAINER_NAME, Likes.class);
+        Result<List<Likes>> likesToDeleteRes = super.query(query3, LIKES_CONTAINER_NAME, Likes.class);
+        if (!likesToDeleteRes.isOK()) return error(likesToDeleteRes.error());
+
+        List<Short> shortsToDelete = shortsToDeleteRes.value();
+        List<Following> followsToDelete = followsToDeleteRes.value();
+        List<Likes> likesToDelete = likesToDeleteRes.value();
+
+        int maxRetries = 10;
+        long retryDelay = 1000;
+        for (Short shortItem : shortsToDelete)
+            deleteWithRetry(shortItem, SHORTS_CONTAINER_NAME, maxRetries, retryDelay);
+
+        for (Following follow : followsToDelete)
+            deleteWithRetry(follow, FOLLOWS_CONTAINER_NAME, maxRetries, retryDelay);
+
+        for (Likes like : likesToDelete)
+            deleteWithRetry(like, LIKES_CONTAINER_NAME, maxRetries, retryDelay);
+
         return ok();
+    }
+
+    private boolean shouldRetry(Result<?> res) {
+        return !res.isOK() && res.error() == INTERNAL_ERROR;
+    }
+    private <T> void deleteWithRetry(T item, String containerName, int maxRetries, long retryDelay) {
+        int attempt = 0;
+        boolean success = false;
+
+        while (attempt < maxRetries && !success) {
+            Result<T> res = super.deleteOne(item, containerName);
+            if (shouldRetry(res)) {
+                attempt++;
+                if (attempt >= maxRetries) {
+                    Log.info("Failed to delete item in container: " + containerName + " after " + maxRetries + " attempts.");
+                } else {
+                    Log.info("Retry " + attempt + " for item deletion in container: " + containerName);
+                }
+            }else {
+                success = true;
+            }
+            try {
+                Thread.sleep(retryDelay);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                Log.info("Retry delay interrupted: " + ie.getMessage());
+                break;
+            }
+        }
     }
 }
