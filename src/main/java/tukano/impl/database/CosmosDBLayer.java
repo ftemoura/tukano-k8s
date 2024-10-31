@@ -55,10 +55,10 @@ public abstract class CosmosDBLayer {
     }
 
     public <T> Result<T> deleteOne(T obj, String containerName, String etag) {
-        return tryCatch(() -> retry(() -> {
+        return tryCatch(() -> {
             getContainer(containerName).deleteItem(obj, new CosmosItemRequestOptions().setIfMatchETag(etag));
             return obj;
-        }, 3, 1000));
+        });
     }
 
     public <T> Result<T> deleteOne(T obj, String containerName) {
@@ -127,7 +127,7 @@ public abstract class CosmosDBLayer {
         }
     }
 
-    public static <T> T retry(Supplier<T> task, int maxRetries, long delay)  {
+    public <T> T retry(Supplier<T> task, int maxRetries, long delay)  {
         int attempt = 0;
 
         while (attempt < maxRetries) {

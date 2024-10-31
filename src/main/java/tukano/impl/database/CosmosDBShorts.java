@@ -41,8 +41,8 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
         return super.insertOne(shrt, SHORTS_CONTAINER_NAME);
     }
 
-    @Override
-    public Result<Void> deleteShort(Short shrt) {
+
+    private Result<Void> deleteShortWithoutRetry(Short shrt){
         String shortId = shrt.getShortId();
         Result<ShortDAO> r = super.getOne(shortId, SHORTS_CONTAINER_NAME, ShortDAO.class);
         Result<Short> result = errorOrResult(r, shortDAO -> super.deleteOne(shortDAO, SHORTS_CONTAINER_NAME, shortDAO.get_etag()));
@@ -51,6 +51,10 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
         JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, blobUrl) );
         if (!result.isOK()) return error(result.error());
         return ok();
+    }
+    @Override
+    public Result<Void> deleteShort(Short shrt) {
+        return super.retry(()->deleteShortWithoutRetry(shrt), 3, 1000);
     }
 
     @Override
@@ -109,8 +113,8 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
         List<String> followees = new LinkedList<>(follows.value().stream().map(Following::getFollowee).toList());
         followees.add(userId);
 
-        Map<String, Object> params = Map.of("followees", followees);
-        String query2 = format("SELECT c.id FROM %s c WHERE c.ownerId IN @followees", SHORTS_CONTAINER_NAME);
+        Map<String, Object> params = Map.of("followees", followees);//TODO Put the order by
+        String query2 = format("SELECT c.id, c.timestamp FROM %s c WHERE c.ownerId IN @followees ORDER BY c.timestamp DESC", SHORTS_CONTAINER_NAME);
         Result<List<Short>> shrts = super.query(query2, SHORTS_CONTAINER_NAME, params, Short.class);
         if(!shrts.isOK()) return error(shrts.error());
         return ok(shrts.value().stream().map(Short::getShortId).toList());

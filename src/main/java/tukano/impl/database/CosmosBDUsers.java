@@ -54,8 +54,7 @@ public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
         return errorOrResult( super.getOne( userId, CONTAINER_NAME, User.class), user -> super.updateOne( user.updateFrom(other), CONTAINER_NAME));
     }
 
-    @Override
-    public Result<User> deleteUser(String userId) {
+    private Result<User> deleteUserWithoutRetry(String userId) {
         Result<UserDAO> r = super.getOne(userId, CONTAINER_NAME, UserDAO.class);
         Log.info(()-> format("deleteUser : %s\n", JSON.encode(r.value())));
         return errorOrResult(r, userDAO -> {
@@ -66,7 +65,11 @@ public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
             }
             return res;
         });
-
+    }
+    
+    @Override
+    public Result<User> deleteUser(String userId) {
+        return super.retry(()->deleteUserWithoutRetry(userId), 3, 1000);
     }
 
     @Override
