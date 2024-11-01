@@ -130,27 +130,29 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
         if (!shortsToDeleteRes.isOK()) return error(shortsToDeleteRes.error());
 
         String query2 = format("SELECT c.id FROM %s c WHERE c.follower = '%s' OR c.followee = '%s'", FOLLOWS_CONTAINER_NAME, userId, userId);
-        Result<List<Following>> followsToDeleteRes = super.query(query2, FOLLOWS_CONTAINER_NAME, Following.class);
+        Result<List<FollowingDAO>> followsToDeleteRes = super.query(query2, FOLLOWS_CONTAINER_NAME, FollowingDAO.class);
         if (!followsToDeleteRes.isOK()) return error(followsToDeleteRes.error());
 
         String query3 = format("SELECT c.id FROM %s c WHERE c.ownerId = '%s' OR c.userId = '%s'", LIKES_CONTAINER_NAME, userId, userId);
-        Result<List<Likes>> likesToDeleteRes = super.query(query3, LIKES_CONTAINER_NAME, Likes.class);
+        Result<List<LikesDAO>> likesToDeleteRes = super.query(query3, LIKES_CONTAINER_NAME, LikesDAO.class);
         if (!likesToDeleteRes.isOK()) return error(likesToDeleteRes.error());
 
         List<Short> shortsToDelete = shortsToDeleteRes.value();
-        List<Following> followsToDelete = followsToDeleteRes.value();
-        List<Likes> likesToDelete = likesToDeleteRes.value();
+        List<FollowingDAO> followsToDelete = followsToDeleteRes.value();
+        List<LikesDAO> likesToDelete = likesToDeleteRes.value();
 
         int maxRetries = 10;
         long retryDelay = 1000;
         for (Short shortItem : shortsToDelete)
             deleteWithRetry(shortItem, SHORTS_CONTAINER_NAME, maxRetries, retryDelay);
 
-        for (Following follow : followsToDelete)
+        for (Following follow : followsToDelete) {
             deleteWithRetry(follow, FOLLOWS_CONTAINER_NAME, maxRetries, retryDelay);
+        }
 
-        for (Likes like : likesToDelete)
+        for (Likes like : likesToDelete) {
             deleteWithRetry(like, LIKES_CONTAINER_NAME, maxRetries, retryDelay);
+        }
 
         return ok();
     }

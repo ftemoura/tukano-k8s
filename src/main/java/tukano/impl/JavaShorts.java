@@ -45,7 +45,7 @@ public class JavaShorts implements Shorts {
 	
 	private JavaShorts() {
 		this.cache = new RedisCacheShorts();
-		this.dbImpl = new PostegreShorts();
+		this.dbImpl = new CosmosDBShorts();
 	}
 	
 	@Override

@@ -40,7 +40,7 @@ public class JavaUsers implements Users {
 	
 	private JavaUsers() {
 		this.cache = new RedisCacheUsers();
-		this.dbImpl = new PostegreUsers();
+		this.dbImpl = new CosmosBDUsers();
 	}
 	
 	@Override
