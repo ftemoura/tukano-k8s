@@ -4,6 +4,8 @@ import tukano.api.Result;
 import tukano.api.User;
 import utils.JSON;
 
+import static java.lang.String.format;
+
 public class RedisCacheUsers extends RedisCache implements UsersCache {
 
     private static final int USERS_TTL = 3600;
@@ -29,5 +31,11 @@ public class RedisCacheUsers extends RedisCache implements UsersCache {
         if (!res.isOK())
             return Result.error(res.error());
         return Result.ok(JSON.decode(res.value(), User.class));
+    }
+
+    @Override
+    public Result<Void> invalidateAllUserInfo(String userId) {
+        String pattern = format("*%s*", userId);
+        return super.deleteKeysByPattern(pattern);
     }
 }

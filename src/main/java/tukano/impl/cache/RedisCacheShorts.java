@@ -10,6 +10,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static java.lang.String.format;
+
 public class RedisCacheShorts extends RedisCache implements ShortsCache {
     //private static final String
     private static final int SHORTS_TTL = 3600;
@@ -122,6 +124,5 @@ public class RedisCacheShorts extends RedisCache implements ShortsCache {
         String cacheKey = USER_FEED_KEY + userId;
         return super.deleteKey(cacheKey);
     }
-
 
 }

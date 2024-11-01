@@ -6,13 +6,16 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.Transaction;
+import redis.clients.jedis.params.ScanParams;
 import redis.clients.jedis.params.SetParams;
+import redis.clients.jedis.resps.ScanResult;
 import tukano.api.Result;
 import tukano.impl.JavaUsers;
 import utils.ConfigLoader;
 import utils.Pair;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -23,10 +26,9 @@ public class RedisCache {
 
     private static final boolean CACHE_ENABLED = ConfigLoader.getInstance().isCacheEnabled();
     private static final int REDIS_TIMEOUT = 2000;
-    private static final boolean REDIS_USE_TLS = false;
+    private static final boolean REDIS_USE_TLS = true;
     private static final Logger log = LoggerFactory.getLogger(RedisCache.class);
 
-    private static java.util.logging.Logger Log = java.util.logging.Logger.getLogger(RedisCache.class.getName());
 
     private static JedisPool instance;
 
@@ -45,7 +47,7 @@ public class RedisCache {
         poolConfig.setTestWhileIdle(true);
         poolConfig.setNumTestsPerEvictionRun(3);
         poolConfig.setBlockWhenExhausted(true);
-        instance = new JedisPool(poolConfig, redisHostname, redisPort, REDIS_TIMEOUT, REDIS_USE_TLS);
+        instance = new JedisPool(poolConfig, redisHostname, redisPort, REDIS_TIMEOUT,redisKey, REDIS_USE_TLS);
         return instance;
     }
 
@@ -191,6 +193,31 @@ public class RedisCache {
                 return Result.error(INTERNAL_ERROR);
             }
         });
+    }
+
+    protected Result<Void> deleteKeysByPattern(String pattern) {
+        try (Jedis jedis = getCachePool().getResource()) {
+            String cursor = "0";
+            ScanParams scanParams = new ScanParams().match(pattern).count(20);
+            List<String> keysToDelete = new ArrayList<>();
+
+            do {
+                ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
+                cursor = scanResult.getCursor();
+                keysToDelete.addAll(scanResult.getResult());
+
+                if (!keysToDelete.isEmpty()) {
+                    jedis.del(keysToDelete.toArray(new String[0]));
+                    keysToDelete.clear();
+                }
+
+            } while (!cursor.equals("0"));
+            return Result.ok();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error(INTERNAL_ERROR);
+
+        }
     }
 
     // We use the exception to cancel the transaction

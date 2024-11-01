@@ -32,7 +32,7 @@ public class JavaBlobs implements Blobs {
 	}
 	
 	private JavaBlobs() {
-		storage = new FilesystemStorage();
+		storage = new AzureBlobStorage();
 		baseURI = String.format("%s/%s/", MainApplication.serverURI, Blobs.NAME);
 	}
 	

@@ -7,4 +7,5 @@ public interface UsersCache {
     void cacheUser(User user);
     void deleteUser(String userId);
     Result<User> getUser(String userId);
+    Result<Void> invalidateAllUserInfo(String userId);
 }

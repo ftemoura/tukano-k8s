@@ -40,7 +40,7 @@ public class JavaUsers implements Users {
 	
 	private JavaUsers() {
 		this.cache = new RedisCacheUsers();
-		this.dbImpl = new CosmosBDUsers();
+		this.dbImpl = new PostegreUsers();
 	}
 	
 	@Override
@@ -134,7 +134,8 @@ public class JavaUsers implements Users {
 
 		if(dbRes.isOK())
 			Executors.defaultThreadFactory().newThread(() -> {
-				cache.deleteUser(userId);
+				//cache.deleteUser(userId);
+				cache.invalidateAllUserInfo(userId);
 			}).start();
 		return dbRes;
 	}
