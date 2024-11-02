@@ -71,6 +71,9 @@ public abstract class CosmosDBLayer {
     public <T> Result<T> updateOne(T obj, String containerName) {
         return tryCatch(() -> getContainer(containerName).upsertItem(obj).getItem());
     }
+    public <T> Result<T> updateOne(T obj, String containerName, String etag) {
+        return tryCatch(() -> getContainer(containerName).upsertItem(obj, new CosmosItemRequestOptions().setIfMatchETag(etag)).getItem());
+    }
 
     public <T> Result<T> insertOne(T obj, String containerName) {
         return tryCatch(() ->{

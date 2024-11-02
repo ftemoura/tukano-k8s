@@ -126,4 +126,6 @@ public interface Shorts {
 	Result<List<String>> getFeed(SecurityContext sc, String userId);
 
 	Result<Void> deleteAllShorts(String userId, String token);
+
+	Result<Void> updateShortViews(String shortId, Long views);
 }

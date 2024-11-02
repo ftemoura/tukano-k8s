@@ -98,6 +98,18 @@ public class RedisCache {
             });
     }
 
+    protected Result<Void> setKeyValue(String key, String value) {
+        return cache(__ -> {
+            try (Jedis jedis = getCachePool().getResource()) {
+                jedis.set(key, value);
+                return Result.ok();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return Result.error(INTERNAL_ERROR);
+            }
+        });
+    }
+
     protected Result<String> getKeyValue(String key) {
         return cache(__ -> {
             try (Jedis jedis = getCachePool().getResource()) {
@@ -108,6 +120,20 @@ public class RedisCache {
                 String[] parts = valueWithTimestamp.split(",", 2);
                 String value = parts[1];
                 return Result.ok(value);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return Result.error(INTERNAL_ERROR);
+            }
+        });
+    }
+    protected Result<String> getKeyValueWithoutTimestamp(String key) {
+        return cache(__ -> {
+            try (Jedis jedis = getCachePool().getResource()) {
+                String val = jedis.get(key);
+                if (val == null) {
+                    return Result.error(Result.ErrorCode.NOT_FOUND);
+                }
+                return Result.ok(val);
             } catch (Exception e) {
                 e.printStackTrace();
                 return Result.error(INTERNAL_ERROR);
@@ -171,11 +197,11 @@ public class RedisCache {
         });
     }
 
-    protected Result<Pair<Long, LocalDateTime>> incrementCounter(String key) {
+    protected Result<Long> incrementCounter(String key) {
         return cache(__ -> {
             try (Jedis jedis = getCachePool().getResource()) {
                 long value = jedis.incr(key);
-                return Result.ok(new Pair<>(value, LocalDateTime.now()));
+                return Result.ok(value);
             } catch (Exception e) {
                 e.printStackTrace();
                 return Result.error(INTERNAL_ERROR);
@@ -183,11 +209,11 @@ public class RedisCache {
         });
     }
 
-    protected Result<Pair<Long, LocalDateTime>> decrementCounter(String key) {
+    protected Result<Long> decrementCounter(String key) {
         return cache(__ -> {
             try (Jedis jedis = getCachePool().getResource()) {
                 long value = jedis.decr(key);
-                return Result.ok(new Pair<>(value, LocalDateTime.now()));
+                return Result.ok(value);
             } catch (Exception e) {
                 e.printStackTrace();
                 return Result.error(INTERNAL_ERROR);

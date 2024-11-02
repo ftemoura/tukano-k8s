@@ -37,6 +37,7 @@ public class Short {
 	String ownerId;
 	String blobUrl;
 	long timestamp;
+	long views;
 	int totalLikes;
 
 	public Short() {}
@@ -93,6 +94,12 @@ public class Short {
 	public void setTotalLikes(int totalLikes) {
 		this.totalLikes = totalLikes;
 	}
+	public void setViews(long views) {
+		this.views = views;
+	}
+	public long getViews() {
+		return views;
+	}
 
 	@JsonIgnore
 	public LocalDateTime getLastModified() {
@@ -122,7 +129,7 @@ public class Short {
 	}
 	
 	public Short copyWithLikes_And_Token( long totLikes) { // TODO token fix (maybe not working)
-		var urlWithToken = String.format("%s?token=%s", blobUrl, Token.get(Token.Service.BLOBS, blobUrl));
+		var urlWithToken = String.format("%s?token=%s", blobUrl, Token.get(Token.Service.BLOBS, shortId));
 		Short shr = new Short( shortId, ownerId, urlWithToken, timestamp, (int)totLikes);
 		shr.setLastModified(_ts);
 		return shr;

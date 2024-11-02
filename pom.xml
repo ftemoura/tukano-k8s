@@ -5,10 +5,16 @@
 	<groupId>scc2425</groupId>
 	<artifactId>tukano</artifactId>
 	<version>1</version>
-	<packaging>war</packaging>
+	<packaging>jar</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<authors>60045-60174</authors>
+		<azure.functions.maven.plugin.version>1.36.0</azure.functions.maven.plugin.version>
+		<azure.functions.java.library.version>3.1.0</azure.functions.java.library.version>
+		<functionAppName>fun60045northeurope</functionAppName>
+		<functionRegion>northeurope</functionRegion>
+		<functionStorageAccountName>sto60045northeurope</functionStorageAccountName>
+		<functionResourceGroup>rg60045-northeurope</functionResourceGroup>
 	</properties>
 	<build>
 		<sourceDirectory>src</sourceDirectory>
@@ -54,26 +60,20 @@
 				</configuration>
 			</plugin><!-- TESTING ONLY-->
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-war-plugin</artifactId>
-				<version>3.4.0</version>
+				<version>3.3.2</version>
 				<configuration>
-					<warSourceDirectory>${project.basedir}/src/main/webapp</warSourceDirectory>
+					<archiveClasses>true</archiveClasses>
+					<attachClasses>true</attachClasses>
 				</configuration>
 			</plugin>
+
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.1</version>
 				<configuration>
 					<release>17</release>
-				</configuration>
-			</plugin>
-			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<configuration>
-					<archive></archive>
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -99,9 +99,57 @@
                     <target>17</target>
                 </configuration>
             </plugin>
+			<plugin>
+				<groupId>com.microsoft.azure</groupId>
+				<artifactId>azure-functions-maven-plugin</artifactId>
+				<version>${azure.functions.maven.plugin.version}</version>
+				<configuration>
+					<appName>${functionAppName}</appName>
+					<storageAccountName>${functionStorageAccountName}</storageAccountName>
+					<resourceGroup>${functionResourceGroup}</resourceGroup>
+					<region>${functionRegion}</region>
+					<disableAppInsights>false</disableAppInsights>
+					<buildJarWithDependencies>false</buildJarWithDependencies>
+
+					<runtime>
+						<javaVersion>17</javaVersion>
+					</runtime>
+					<appSettings>
+						<property>
+							<name>FUNCTIONS_EXTENSION_VERSION</name>
+							<value>~4</value>
+						</property>
+					</appSettings>
+				</configuration>
+				<executions>
+					<execution>
+						<id>package-functions</id>
+						<goals>
+							<goal>package</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-clean-plugin</artifactId>
+				<version>3.4.0</version>
+				<configuration>
+					<filesets>
+						<fileset>
+							<directory>obj</directory>
+						</fileset>
+					</filesets>
+				</configuration>
+			</plugin>
         </plugins>
 	</build>
 	<dependencies>
+		<dependency>
+			<groupId>com.microsoft.azure.functions</groupId>
+			<artifactId>azure-functions-java-library</artifactId>
+			<version>${azure.functions.java.library.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>com.azure</groupId>
 			<artifactId>azure-cosmos</artifactId>

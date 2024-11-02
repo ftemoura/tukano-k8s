@@ -19,7 +19,6 @@ import tukano.api.Users;
 import tukano.impl.cache.RedisCacheUsers;
 import tukano.impl.cache.UsersCache;
 import tukano.impl.database.CosmosBDUsers;
-import tukano.impl.database.PostegreUsers;
 import tukano.impl.database.UsersDatabase;
 
 public class JavaUsers implements Users {

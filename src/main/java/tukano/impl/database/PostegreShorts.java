@@ -3,6 +3,7 @@ package tukano.impl.database;
 import tukano.api.Blobs;
 import tukano.api.Result;
 import tukano.api.Short;
+import tukano.api.User;
 import tukano.impl.JavaBlobs;
 import tukano.impl.Token;
 import tukano.impl.data.Following;
@@ -13,7 +14,7 @@ import utils.DB;
 import java.util.List;
 
 import static java.lang.String.format;
-import static tukano.api.Result.ok;
+import static tukano.api.Result.*;
 import static utils.DB.getOne;
 
 public class PostegreShorts implements ShortsDatabse{
@@ -29,8 +30,8 @@ public class PostegreShorts implements ShortsDatabse{
             hibernate.remove( shrt);
             var query = format("DELETE Likes l WHERE l.shortId = '%s'", shortId);
             hibernate.createMutationQuery(query).executeUpdate();
-            var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
-            JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, blobUrl) );
+            //var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
+            JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, shortId) );
         });
     }
 
@@ -102,5 +103,15 @@ public class PostegreShorts implements ShortsDatabse{
             hibernate.createMutationQuery(query3).executeUpdate();
 
         });
+    }
+
+    @Override
+    public Result<Void> updateShortViews(String shortId, Long views) {
+        Result<Short> res = errorOrResult( DB.getOne( shortId, Short.class), shrt -> {
+            shrt.setViews(views);
+            return  DB.updateOne(shrt);
+        });
+        if(!res.isOK()) return error(res.error());
+        return ok();
     }
 }

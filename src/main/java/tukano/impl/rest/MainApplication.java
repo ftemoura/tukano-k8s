@@ -17,7 +17,7 @@ public class MainApplication extends Application
     private Set<Class<?>> resources = new HashSet<>();
 
     static final String INETADDR_ANY = "0.0.0.0";
-    static String SERVER_BASE_URI = "http://127.0.0.1:%s/tukano/rest";//TODO mudar feito para dar no docker
+    static String SERVER_BASE_URI = "https://fun60045northeurope.azurewebsites.net/lab5";//TODO mudar feito para dar no docker
 
     public static final int PORT = 8080;
 

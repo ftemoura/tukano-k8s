@@ -49,8 +49,8 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
         Result<ShortDAO> r = super.getOne(shortId, SHORTS_CONTAINER_NAME, ShortDAO.class);
         Result<Short> result = errorOrResult(r, shortDAO -> super.deleteOne(shortDAO, SHORTS_CONTAINER_NAME, shortDAO.get_etag()));
         if (!result.isOK()) return error(result.error());
-        var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
-        JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, blobUrl) );
+        //var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
+        JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, shortId) );
         if (!result.isOK()) return error(result.error());
         return ok();
     }
@@ -154,6 +154,17 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
             deleteWithRetry(like, LIKES_CONTAINER_NAME, maxRetries, retryDelay);
         }
 
+        return ok();
+    }
+
+    @Override
+    public Result<Void> updateShortViews(String shortId, Long views) {
+        Result<ShortDAO> shrt = super.getOne(shortId, SHORTS_CONTAINER_NAME, ShortDAO.class);
+        if (!shrt.isOK()) return error(shrt.error());
+        ShortDAO shortDAO = shrt.value();
+        shortDAO.setViews(views);
+        Result<ShortDAO> res = super.updateOne(shortDAO, SHORTS_CONTAINER_NAME, shortDAO.get_etag());
+        if (!res.isOK()) return error(res.error());
         return ok();
     }
 

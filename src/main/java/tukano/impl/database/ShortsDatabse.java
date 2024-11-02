@@ -116,5 +116,6 @@ public interface ShortsDatabse {
 
     Result<Void> deleteAllShorts(String userId, String token);
 
+    Result<Void> updateShortViews(String shortId, Long views);
 
 }

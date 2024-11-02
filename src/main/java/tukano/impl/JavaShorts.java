@@ -16,6 +16,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 import jakarta.ws.rs.core.SecurityContext;
+import org.checkerframework.checker.units.qual.C;
 import tukano.api.*;
 import tukano.api.Short;
 import tukano.impl.cache.RedisCacheShorts;
@@ -23,7 +24,6 @@ import tukano.impl.cache.ShortsCache;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
 import tukano.impl.database.CosmosDBShorts;
-import tukano.impl.database.PostegreShorts;
 import tukano.impl.database.ShortsDatabse;
 import tukano.impl.rest.MainApplication;
 import utils.FakeSecurityContext;
@@ -238,5 +238,10 @@ public class JavaShorts implements Shorts {
 
 		return dbImpl.deleteAllShorts(userId, token);
 	}
-	
+
+	@Override
+	public Result<Void> updateShortViews(String shortId, Long views) {
+		return dbImpl.updateShortViews(shortId, views);
+	}
+
 }
