@@ -5,7 +5,7 @@ set -x #echo on
 #source ./azure.config
 #set +o allexport
 
-SECRETS_FILE_LOCATION="../src/java/resources/application.secrets"
+SECRETS_FILE_LOCATION="../src/main/resources/application.secrets"
 
 add_secret() {
   local secret_key="$1"
@@ -27,6 +27,7 @@ export AZURE_RESOURCE_GROUP_LOCATION=francecentral
 export AZURE_APP_NAME_BASE=astukano6004560174
 export AZURE_REDIS_NAME_BASE=redistukano6004560174
 export AZURE_COSMOSDB_NAME_BASE=cosmostukano6004560174
+export AZURE_COSMOSDB_DATABASE_NAME=db-$AZURE_COSMOSDB_NAME_BASE
 export AZURE_COSMOSDB_POSTGRESQL_NAME_BASE=sqltukano6004560174
 export AZURE_BLOB_STORAGE_ACCOUNT_NAME_BASE=stk60045
 export AZURE_REGIONS="francecentral canadacentral"
@@ -35,46 +36,42 @@ export AZURE_FUNCTIONS_NAME_BASE=funtukano6004560174
 
 regions=($AZURE_REGIONS)
 secret_files=($SECRET_FILES)
+add_secret AZURE_REGION ${regions[0]} ${secret_files[0]}
+add_secret AZURE_REGION ${regions[1]} ${secret_files[1]}
 
-DEPLOY_BLOBS=true
+DEPLOY_BLOBS=false
 DEPLOY_COSMOSDB_POSTGRESQL=false
-DEPLOY_COSMOSDB=false
+DEPLOY_COSMOSDB=true
 DEPLOY_REDIS=false
-DEPLOY_FUNCTIONS=true
-DEPLOY_APP=true
+DEPLOY_FUNCTIONS=false
+DEPLOY_APP=false
 
 
 az group create -l $AZURE_RESOURCE_GROUP_LOCATION -n $AZURE_RESOURCE_GROUP
 
 AZURE_SUBSCRIPTION=$(az account show --query "id" | tr -d '"')
 
-# COSMOS DB DEPLOY
 if $DEPLOY_COSMOSDB; then
-  # geo - verify regions len
-  az cosmosdb create \
-  --name $AZURE_COSMOSDB_NAME_BASE \
-  --resource-group $AZURE_RESOURCE_GROUP \
-  --locations regionName=${regions[0]} failoverPriority=0 isZoneRedundant=False \
-  --locations regionName=${regions[1]} failoverPriority=1 isZoneRedundant=True \
-  --enable-multiple-write-locations
+  #az cosmosdb create \
+  #--name $AZURE_COSMOSDB_NAME_BASE \
+  #--resource-group $AZURE_RESOURCE_GROUP \
+  #--locations regionName=${regions[0]} failoverPriority=0 isZoneRedundant=False \
+  #--locations regionName=${regions[1]} failoverPriority=1 isZoneRedundant=True \
+  #--enable-multiple-write-locations
+
+  az cosmosdb sql database create -a $AZURE_COSMOSDB_NAME_BASE --name $AZURE_COSMOSDB_DATABASE_NAME --resource-group $AZURE_RESOURCE_GROUP --throughput "400"
+  az cosmosdb sql container create -g $AZURE_RESOURCE_GROUP -a $AZURE_COSMOSDB_NAME_BASE -d $AZURE_COSMOSDB_DATABASE_NAME -n "shorts" --partition-key-path "/id"
+  az cosmosdb sql container create -g $AZURE_RESOURCE_GROUP -a $AZURE_COSMOSDB_NAME_BASE -d $AZURE_COSMOSDB_DATABASE_NAME -n "likes" --partition-key-path "/id"
+  az cosmosdb sql container create -g $AZURE_RESOURCE_GROUP -a $AZURE_COSMOSDB_NAME_BASE -d $AZURE_COSMOSDB_DATABASE_NAME -n "follows" --partition-key-path "/id"  
+  az cosmosdb sql container create -g $AZURE_RESOURCE_GROUP -a $AZURE_COSMOSDB_NAME_BASE -d $AZURE_COSMOSDB_DATABASE_NAME -n "users" --partition-key-path "/id"
 
   AZURE_COSMOSDB_PRIMARY_KEY=$(az cosmosdb keys list --name $AZURE_COSMOSDB_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --type keys --query "primaryMasterKey" | tr -d '"')
-  AZURE_COSMOSDB_SECONDARY_KEY=$(az cosmosdb keys list --name $AZURE_COSMOSDB_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --type keys --query "secondaryMasterKey" | tr -d '"')
   AZURE_COSMOSDB_PRIMARY_ENDPOINT=$(az cosmosdb show --name $AZURE_COSMOSDB_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --query "writeLocations[0].documentEndpoint" | tr -d '"')
-  AZURE_COSMOSDB_SECONDARY_ENDPOINT=$(az cosmosdb show --name $AZURE_COSMOSDB_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --query "writeLocations[1].documentEndpoint" | tr -d '"')
-  AZURE_COSMOSDB_PRIMARY_NAME=$(az cosmosdb show --name $AZURE_COSMOSDB_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --query "writeLocations[0].id" | tr -d '"')
-  AZURE_COSMOSDB_SECONDARY_NAME=$(az cosmosdb show --name $AZURE_COSMOSDB_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --query "writeLocations[1].id" | tr -d '"')
-
+  
   # write the secrets to the appropriate region secret file
-
-  add_secret AZURE_COSMOSDB_KEY $AZURE_COSMOSDB_PRIMARY_KEY "${secret_files[0]}"
-  add_secret AZURE_COSMOSDB_KEY $AZURE_COSMOSDB_SECONDARY_KEY "${secret_files[1]}"
-
-  add_secret AZURE_COSMOSDB_URL $AZURE_COSMOSDB_PRIMARY_ENDPOINT "${secret_files[0]}"
-  add_secret AZURE_COSMOSDB_URL $AZURE_COSMOSDB_SECONDARY_ENDPOINT "${secret_files[1]}"
-
-  add_secret AZURE_COSMOSDB_NAME $AZURE_COSMOSDB_PRIMARY_NAME "${secret_files[0]}"
-  add_secret AZURE_COSMOSDB_NAME $AZURE_COSMOSDB_SECONDARY_NAME "${secret_files[1]}"
+  add_secret AZURE_COSMOSDB_KEY $AZURE_COSMOSDB_PRIMARY_KEY "$SECRET_FILES"
+  add_secret AZURE_COSMOSDB_ENDPOINT $AZURE_COSMOSDB_PRIMARY_ENDPOINT "$SECRET_FILES"
+  add_secret AZURE_COSMOSDB_NAME $AZURE_COSMOSDB_DATABASE_NAME "$SECRET_FILES"
 fi
 
 if $DEPLOY_COSMOSDB_POSTGRESQL; then
@@ -109,7 +106,6 @@ if $DEPLOY_COSMOSDB_POSTGRESQL; then
   add_secret HIBERNATE_JDBC_URL $AZURE_POSTGRES_JDBC "$SECRET_FILES"
 fi
 
-# BLOB STORAGE DEPLOY
 if $DEPLOY_BLOBS; then
   az storage account create \
     --name $AZURE_BLOB_STORAGE_ACCOUNT_NAME_BASE \
@@ -117,6 +113,10 @@ if $DEPLOY_BLOBS; then
     --location ${regions[0]} \
     --kind StorageV2 \
     --sku "Standard_RAGRS"
+  az storage container create \
+        --name "shorts" \
+        --account-name $AZURE_BLOB_STORAGE_ACCOUNT_NAME_BASE \
+        --auth-mode login
   AZURE_BLOB_STORE_CONNECTION=$(az storage account show-connection-string --name $AZURE_BLOB_STORAGE_ACCOUNT_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --query "connectionString" | tr -d '"')
   add_secret AZURE_BLOB_STORE_CONNECTION $AZURE_BLOB_STORE_CONNECTION "$SECRET_FILES"
 fi

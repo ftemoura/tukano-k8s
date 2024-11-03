@@ -37,6 +37,10 @@ public class ConfigLoader {
         return instance;
     }
 
+    public String getRegion() {
+        return secrets.getProperty("AZURE_REGION");
+    }
+
     public String getBlobConnectionString() {
         return secrets.getProperty("AZURE_BLOB_STORE_CONNECTION");
     }

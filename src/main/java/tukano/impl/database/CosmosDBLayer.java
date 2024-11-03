@@ -28,9 +28,8 @@ public abstract class CosmosDBLayer {
 
     public CosmosDBLayer() {
         this.client = new CosmosClientBuilder().endpoint(CONNECTION_URL).key(DB_KEY)
-                //.directMode()
                 .gatewayMode()
-                // replace by .directMode() for better performance
+                .preferredRegions(List.of(ConfigLoader.getInstance().getRegion()))
                 .consistencyLevel(ConsistencyLevel.SESSION).connectionSharingAcrossClientsEnabled(true).contentResponseOnWriteEnabled(true).buildClient();
         this.containers = new HashMap<>();
     }
