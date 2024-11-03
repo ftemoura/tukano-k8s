@@ -12,6 +12,8 @@ import tukano.impl.JavaShorts;
 import tukano.impl.Token;
 import tukano.impl.database.ShortsDatabse;
 
+import static tukano.api.Result.statusFromErrorCode;
+
 /**
  * Azure Functions with HTTP Trigger.
  */
@@ -47,8 +49,7 @@ public class DownloadBlobs {
             Result<byte[]> result = javaBlobs.download(blobId, token);
             if (!result.isOK()) {
                 context.getLogger().warning("Download failed: Forbidden or Blob not found.");
-                return request.createResponseBuilder(HttpStatus.FORBIDDEN)
-                        .body("Download failed: Access Forbidden or Blob not found.")
+                return request.createResponseBuilder(statusFromErrorCode(result.error()))
                         .build();
             }
             return request.createResponseBuilder(HttpStatus.OK)

@@ -1,5 +1,7 @@
 package tukano.api;
 
+import com.microsoft.azure.functions.HttpStatus;
+
 import java.util.function.Function;
 
 import static tukano.api.Result.ErrorCode.*;
@@ -123,6 +125,16 @@ public interface Result<T> {
 			case 409 -> CONFLICT;
 			case 412 -> PRECONDITION_FAILED;
 			default -> INTERNAL_ERROR;
+		};
+	}
+
+	static HttpStatus statusFromErrorCode(ErrorCode error) {
+		return switch (error) {
+			case OK -> HttpStatus.OK;
+			case NOT_FOUND -> HttpStatus.NOT_FOUND;
+			case CONFLICT -> HttpStatus.CONFLICT;
+			case PRECONDITION_FAILED -> HttpStatus.PRECONDITION_FAILED;
+			default -> HttpStatus.INTERNAL_SERVER_ERROR;
 		};
 	}
 }

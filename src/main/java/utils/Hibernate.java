@@ -34,8 +34,8 @@ public class Hibernate {
 			configuration.setProperty("hibernate.connection.url", ConfigLoader.getInstance().getHibernateConnectionUrl());
 			configuration.setProperty("hibernate.connection.username", ConfigLoader.getInstance().getHibernateUsername());
 			configuration.setProperty("hibernate.connection.password", ConfigLoader.getInstance().getHibernatePassword());
-			StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties());
-			sessionFactory = configuration.buildSessionFactory(builder.build());
+			//StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties());
+			sessionFactory = configuration.buildSessionFactory();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

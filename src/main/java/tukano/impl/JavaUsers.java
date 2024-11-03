@@ -19,6 +19,7 @@ import tukano.api.Users;
 import tukano.impl.cache.RedisCacheUsers;
 import tukano.impl.cache.UsersCache;
 import tukano.impl.database.CosmosBDUsers;
+import tukano.impl.database.PostegreUsers;
 import tukano.impl.database.UsersDatabase;
 
 public class JavaUsers implements Users {
@@ -39,7 +40,7 @@ public class JavaUsers implements Users {
 	
 	private JavaUsers() {
 		this.cache = new RedisCacheUsers();
-		this.dbImpl = new CosmosBDUsers();
+		this.dbImpl = new PostegreUsers();
 	}
 	
 	@Override
