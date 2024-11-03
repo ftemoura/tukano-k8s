@@ -5,16 +5,12 @@
 	<groupId>scc2425</groupId>
 	<artifactId>tukano</artifactId>
 	<version>1</version>
-	<packaging>jar</packaging>
+	<packaging>$AZURE_JAVA_PACKAGING</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<authors>60045-60174</authors>
 		<azure.functions.maven.plugin.version>1.36.0</azure.functions.maven.plugin.version>
 		<azure.functions.java.library.version>3.1.0</azure.functions.java.library.version>
-		<functionAppName>fun60045northeurope</functionAppName>
-		<functionRegion>northeurope</functionRegion>
-		<functionStorageAccountName>sto60045northeurope</functionStorageAccountName>
-		<functionResourceGroup>rg60045-northeurope</functionResourceGroup>
 	</properties>
 	<build>
 		<sourceDirectory>src</sourceDirectory>
@@ -26,7 +22,7 @@
 				<configuration>
 					<schemaVersion>V2</schemaVersion>
 					<pricingTier>F1</pricingTier>
-					<region>westeurope</region>
+					<region>$AZURE_REGION</region>
 					<runtime>
 						<os>linux</os>
 						<javaVersion>Java 17</javaVersion>
@@ -42,11 +38,11 @@
 							</resource>
 						</resources>
 					</deployment>
-					<resourceGroup>tukano-60045-60174-rg</resourceGroup>
-					<appName>tukano-60045-60174-as</appName>
+					<resourceGroup>$AZURE_RESOURCE_GROUP</resourceGroup>
+					<appName>$AZURE_APP_NAME_BASE$AZURE_REGION</appName>
 				</configuration>
 			</plugin>
-			<plugin> <!-- TESTING ONLY-->
+			<plugin><!-- TESTING ONLY-->
 				<groupId>org.apache.tomcat.maven</groupId>
 				<artifactId>tomcat7-maven-plugin</artifactId>
 				<version>2.1</version>
@@ -68,27 +64,11 @@
 					<attachClasses>true</attachClasses>
 				</configuration>
 			</plugin>
-
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.1</version>
 				<configuration>
 					<release>17</release>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>io.fabric8</groupId>
-				<artifactId>docker-maven-plugin</artifactId>
-				<version>0.44.0</version>
-				<configuration>
-					<images>
-						<image>
-							<name>smduarte/${project.artifactId}</name>
-							<build>
-								<dockerFile>${project.basedir}/Dockerfile</dockerFile>
-							</build>
-						</image>
-					</images>
 				</configuration>
 			</plugin>
             <plugin>
@@ -104,13 +84,12 @@
 				<artifactId>azure-functions-maven-plugin</artifactId>
 				<version>${azure.functions.maven.plugin.version}</version>
 				<configuration>
-					<appName>${functionAppName}</appName>
-					<storageAccountName>${functionStorageAccountName}</storageAccountName>
-					<resourceGroup>${functionResourceGroup}</resourceGroup>
-					<region>${functionRegion}</region>
+					<appName>$AZURE_FUNCTIONS_NAME_BASE$AZURE_REGION</appName>
+					<storageAccountName>$AZURE_FUNCTIONS_STORAGE_ACCOUNT_NAME</storageAccountName>
+					<resourceGroup>$AZURE_RESOURCE_GROUP</resourceGroup>
+					<region>$AZURE_REGION</region>
 					<disableAppInsights>false</disableAppInsights>
 					<buildJarWithDependencies>false</buildJarWithDependencies>
-
 					<runtime>
 						<javaVersion>17</javaVersion>
 					</runtime>

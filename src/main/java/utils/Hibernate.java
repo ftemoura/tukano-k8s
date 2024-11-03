@@ -1,6 +1,7 @@
 package utils;
 
 import java.io.File;
+import java.security.cert.CertPath;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -8,6 +9,7 @@ import java.util.function.Function;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.exception.ConstraintViolationException;
 
@@ -28,8 +30,12 @@ public class Hibernate {
 
 	private Hibernate() {
 		try {
-			sessionFactory = new Configuration().configure(new File(HIBERNATE_CFG_FILE)).buildSessionFactory();
-
+			Configuration configuration = new Configuration().configure(new File(HIBERNATE_CFG_FILE));
+			configuration.setProperty("hibernate.connection.url", ConfigLoader.getInstance().getHibernateConnectionUrl());
+			configuration.setProperty("hibernate.connection.username", ConfigLoader.getInstance().getHibernateUsername());
+			configuration.setProperty("hibernate.connection.password", ConfigLoader.getInstance().getHibernatePassword());
+			StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties());
+			sessionFactory = configuration.buildSessionFactory(builder.build());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
