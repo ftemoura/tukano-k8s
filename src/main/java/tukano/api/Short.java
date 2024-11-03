@@ -42,17 +42,18 @@ public class Short {
 
 	public Short() {}
 	
-	public Short(String shortId, String ownerId, String blobUrl, long timestamp, int totalLikes) {
+	public Short(String shortId, String ownerId, String blobUrl, long timestamp, int totalLikes, long views) {
 		super();
 		this.shortId = shortId;
 		this.ownerId = ownerId;
 		this.blobUrl = blobUrl;
 		this.timestamp = timestamp;
 		this.totalLikes = totalLikes;
+		this.views = views;
 	}
 
 	public Short(String shortId, String ownerId, String blobUrl) {
-		this( shortId, ownerId, blobUrl, System.currentTimeMillis(), 0);
+		this( shortId, ownerId, blobUrl, System.currentTimeMillis(), 0, 0);
 	}
 	
 	public String getShortId() {
@@ -130,7 +131,7 @@ public class Short {
 	
 	public Short copyWithLikes_And_Token( long totLikes) { // TODO token fix (maybe not working)
 		var urlWithToken = String.format("%s?token=%s", blobUrl, Token.get(Token.Service.BLOBS, shortId));
-		Short shr = new Short( shortId, ownerId, urlWithToken, timestamp, (int)totLikes);
+		Short shr = new Short( shortId, ownerId, urlWithToken, timestamp, (int)totLikes, views);
 		shr.setLastModified(_ts);
 		return shr;
 	}	
