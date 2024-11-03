@@ -21,7 +21,7 @@
 				<version>2.13.0</version>
 				<configuration>
 					<schemaVersion>V2</schemaVersion>
-					<pricingTier>F1</pricingTier>
+					<pricingTier>S1</pricingTier>
 					<region>$AZURE_REGION</region>
 					<runtime>
 						<os>linux</os>
