@@ -37,11 +37,11 @@ regions=($AZURE_REGIONS)
 secret_files=($SECRET_FILES)
 
 DEPLOY_BLOBS=true
-DEPLOY_COSMOSDB_POSTGRESQL=true
+DEPLOY_COSMOSDB_POSTGRESQL=false
 DEPLOY_COSMOSDB=false
-DEPLOY_REDIS=true
-DEPLOY_FUNCTIONS=false
-DEPLOY_APP=false
+DEPLOY_REDIS=false
+DEPLOY_FUNCTIONS=true
+DEPLOY_APP=true
 
 
 az group create -l $AZURE_RESOURCE_GROUP_LOCATION -n $AZURE_RESOURCE_GROUP
@@ -77,8 +77,6 @@ if $DEPLOY_COSMOSDB; then
   add_secret AZURE_COSMOSDB_NAME $AZURE_COSMOSDB_SECONDARY_NAME "${secret_files[1]}"
 fi
 
-# https://learn.microsoft.com/en-us/cli/azure/cosmosdb/postgres/cluster?view=azure-cli-latest#az-cosmosdb-postgres-cluster-create
-# COSMOS DB POSTGRESQL DEPLOY
 if $DEPLOY_COSMOSDB_POSTGRESQL; then
 
   AZURE_COSMOSDB_POSTGRESQL_PWD=$(pwgen -N 1 -n 100)
@@ -128,17 +126,17 @@ for region in $AZURE_REGIONS
 do
   if $DEPLOY_REDIS; then
     az redis create --name $AZURE_REDIS_NAME_BASE$region --resource-group $AZURE_RESOURCE_GROUP --location "$region" --sku Basic --vm-size c0
-    redis=($(az redis show --name "$redis_name" --resource-group $resourceGroup --query [hostName,enableNonSslPort,port,sslPort] --output tsv))
-    keys=($(az redis list-keys --name "$redis_name" --resource-group $resourceGroup --query [primaryKey,secondaryKey] --output tsv))
+    redis=($(az redis show --name $AZURE_REDIS_NAME_BASE$region --resource-group $AZURE_RESOURCE_GROUP --query [hostName,enableNonSslPort,port,sslPort] --output tsv))
+    keys=($(az redis list-keys --name $AZURE_REDIS_NAME_BASE$region --resource-group $AZURE_RESOURCE_GROUP --query [primaryKey,secondaryKey] --output tsv))
     add_secret REDIS_URL ${redis[0]} "${secret_files[$INDEX]}"
     add_secret REDIS_KEY ${keys[0]} "${secret_files[$INDEX]}"
-    add_secret REDIS_PORT ${redis[2]} "${secret_files[$INDEX]}"
+    add_secret REDIS_PORT ${redis[3]} "${secret_files[$INDEX]}"
   fi
 
   export AZURE_REGION=$region # used in POM
   if $DEPLOY_APP; then
     export AZURE_JAVA_PACKAGING="war"
-    cp $region.secrets SECRETS_FILE_LOCATION
+    cp $region.secrets $SECRETS_FILE_LOCATION
     envsubst "$(printf '${%s} ' ${!AZURE*})" < ../pom.xml > ../_pom.xml && \
     mvn -f ../_pom.xml clean compile package azure-webapp:deploy
     rm ../_pom.xml
@@ -146,7 +144,7 @@ do
 
   if $DEPLOY_FUNCTIONS; then
     export AZURE_JAVA_PACKAGING="jar"
-    cp $region.secrets SECRETS_FILE_LOCATION
+    cp $region.secrets $SECRETS_FILE_LOCATION
     envsubst "$(printf '${%s} ' ${!AZURE*})" < ../pom.xml > ../_pom.xml && \
     mvn -f ../_pom.xml clean compile package azure-functions:deploy
     rm ../_pom.xml
@@ -154,15 +152,3 @@ do
 
   let INDEX=${INDEX}+1
 done
-
-
-
-# Variable block
-
-
-# Delete a redis cache
-#echo "Deleting $cache"
-#az redis delete --name "$cache" --resource-group $resourceGroup -y
-
-# echo "Deleting all resources"
-#az group delete --resource-group $resourceGroup -y
