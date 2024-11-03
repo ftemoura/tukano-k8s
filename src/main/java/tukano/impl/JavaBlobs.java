@@ -4,6 +4,7 @@ import static java.lang.String.format;
 import static tukano.api.Result.error;
 import static tukano.api.Result.ErrorCode.FORBIDDEN;
 
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -58,29 +59,31 @@ public class JavaBlobs implements Blobs {
 
 		if( ! validBlobId( blobId, token ) )
 			return error(FORBIDDEN);
-		Result<Long> viewsRes = cache.getBlobViews(blobId);
-		Long views = 0L;
-		if( ! viewsRes.isOK() ) {
-			Result<Short> shrtRes = javaShorts.getShort(blobId);
-			if( ! shrtRes.isOK() )
-				return error(shrtRes.error());
-			views = shrtRes.value().getViews() + 1;
-			cache.setBlobViews(blobId, views);
+		Executors.defaultThreadFactory().newThread(() -> {
+			Result<Long> viewsRes = cache.getBlobViews(blobId);
+			Long views = 0L;
+			if (!viewsRes.isOK()) {
+				Result<Short> shrtRes = javaShorts.getShort(blobId);
+				if (!shrtRes.isOK())
+					return;
+				views = shrtRes.value().getViews() + 1;
+				cache.setBlobViews(blobId, views);
 
-		}else {
-			Result<Long> vr = cache.increaseBlobViews(blobId);
-			if(vr.isOK())
-				views = vr.value();
-		}
+			} else {
+				Result<Long> vr = cache.increaseBlobViews(blobId);
+				if (vr.isOK())
+					views = vr.value();
+			}
 
-		Result<Long> lastUpdateRes = cache.getLastUpdate(blobId);
-		if( !lastUpdateRes.isOK() ){
-			cache.updateLastUpdate(blobId, System.currentTimeMillis());
-		}else {
-			if( System.currentTimeMillis() - lastUpdateRes.value() > MAX_TIME_WITHOUT_UPDATE )
-				javaShorts.updateShortViews(blobId, views);
-			cache.updateLastUpdate(blobId, System.currentTimeMillis());
-		}
+			Result<Long> lastUpdateRes = cache.getLastUpdate(blobId);
+			if (!lastUpdateRes.isOK()) {
+				cache.updateLastUpdate(blobId, System.currentTimeMillis());
+			} else {
+				if (System.currentTimeMillis() - lastUpdateRes.value() > MAX_TIME_WITHOUT_UPDATE)
+					javaShorts.updateShortViews(blobId, views);
+				cache.updateLastUpdate(blobId, System.currentTimeMillis());
+			}
+		}).start();
 
 		return storage.read( toPath( blobId ) );
 	}
