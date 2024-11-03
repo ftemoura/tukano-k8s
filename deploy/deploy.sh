@@ -24,7 +24,7 @@ add_secret() {
 
 export AZURE_RESOURCE_GROUP=rg-Tukano-60045-60174
 export AZURE_RESOURCE_GROUP_LOCATION=francecentral
-export AZURE_APP_NAME_BASE=astukano6004560174
+export AZURE_APP_NAME_BASE=astukano6004560174T # TESTING
 export AZURE_REDIS_NAME_BASE=redistukano6004560174
 export AZURE_COSMOSDB_NAME_BASE=cosmostukano6004560174
 export AZURE_COSMOSDB_DATABASE_NAME=db-$AZURE_COSMOSDB_NAME_BASE
@@ -33,6 +33,8 @@ export AZURE_BLOB_STORAGE_ACCOUNT_NAME_BASE=stk60045
 export AZURE_REGIONS="francecentral canadacentral"
 export SECRET_FILES="./francecentral.secrets ./canadacentral.secrets"
 export AZURE_FUNCTIONS_NAME_BASE=funtukano6004560174
+export AZURE_FUNCTIONS_STORAGE_ACCOUNT_NAME=sfuntk6004560174
+export AZURE_TRAFFIC_MANAGER_NAME_BASE=tmtukano6004560174
 
 regions=($AZURE_REGIONS)
 secret_files=($SECRET_FILES)
@@ -40,24 +42,60 @@ add_secret AZURE_REGION ${regions[0]} ${secret_files[0]}
 add_secret AZURE_REGION ${regions[1]} ${secret_files[1]}
 
 DEPLOY_BLOBS=false
-DEPLOY_COSMOSDB_POSTGRESQL=false
-DEPLOY_COSMOSDB=true
+DEPLOY_COSMOSDB_POSTGRESQL=true
+DEPLOY_COSMOSDB=false
 DEPLOY_REDIS=false
-DEPLOY_FUNCTIONS=false
+DEPLOY_FUNCTIONS=true
 DEPLOY_APP=false
+DEPLOY_TRAFFIC_MANAGER=false
+LOCAL_TOMCAT=false
 
+if $DEPLOY_TRAFFIC_MANAGER; then
+az network traffic-manager profile create \
+    --name $AZURE_TRAFFIC_MANAGER_NAME_BASE \
+    --resource-group $AZURE_RESOURCE_GROUP \
+    --routing-method Priority \
+    --path '/' \
+    --protocol "HTTPS" \
+    --unique-dns-name $AZURE_TRAFFIC_MANAGER_NAME_BASE  \
+    --ttl 30 \
+--port 443
+
+App1ResourceId=$(az webapp show --name $AZURE_APP_NAME_BASE${regions[1]} --resource-group $AZURE_RESOURCE_GROUP --query id --output tsv)
+
+az network traffic-manager endpoint create \
+    --name $AZURE_APP_NAME_BASE${regions[1]} \
+    --resource-group $AZURE_RESOURCE_GROUP \
+    --profile-name $AZURE_TRAFFIC_MANAGER \
+    --type azureEndpoints \
+    --target-resource-id $App1ResourceId \
+    --priority 2 \
+    --endpoint-status Enabled
+
+
+App2ResourceId=$(az webapp show --name $AZURE_APP_NAME_BASE${regions[0]} --resource-group $AZURE_RESOURCE_GROUP --query id --output tsv)
+
+az network traffic-manager endpoint create \
+    --name $AZURE_APP_NAME_BASE${regions[0]} \
+    --resource-group $AZURE_RESOURCE_GROUP \
+    --profile-name $AZURE_TRAFFIC_MANAGER \
+    --type azureEndpoints \
+    --target-resource-id  $App2ResourceId \
+    --priority 1 \
+    --endpoint-status Enabled
+fi
 
 az group create -l $AZURE_RESOURCE_GROUP_LOCATION -n $AZURE_RESOURCE_GROUP
 
 AZURE_SUBSCRIPTION=$(az account show --query "id" | tr -d '"')
 
 if $DEPLOY_COSMOSDB; then
-  #az cosmosdb create \
-  #--name $AZURE_COSMOSDB_NAME_BASE \
-  #--resource-group $AZURE_RESOURCE_GROUP \
-  #--locations regionName=${regions[0]} failoverPriority=0 isZoneRedundant=False \
-  #--locations regionName=${regions[1]} failoverPriority=1 isZoneRedundant=True \
-  #--enable-multiple-write-locations
+  az cosmosdb create \
+  --name $AZURE_COSMOSDB_NAME_BASE \
+  --resource-group $AZURE_RESOURCE_GROUP \
+  --locations regionName=${regions[0]} failoverPriority=0 isZoneRedundant=False \
+  --locations regionName=${regions[1]} failoverPriority=1 isZoneRedundant=True \
+  --enable-multiple-write-locations
 
   az cosmosdb sql database create -a $AZURE_COSMOSDB_NAME_BASE --name $AZURE_COSMOSDB_DATABASE_NAME --resource-group $AZURE_RESOURCE_GROUP --throughput "400"
   az cosmosdb sql container create -g $AZURE_RESOURCE_GROUP -a $AZURE_COSMOSDB_NAME_BASE -d $AZURE_COSMOSDB_DATABASE_NAME -n "shorts" --partition-key-path "/id"
@@ -66,7 +104,7 @@ if $DEPLOY_COSMOSDB; then
   az cosmosdb sql container create -g $AZURE_RESOURCE_GROUP -a $AZURE_COSMOSDB_NAME_BASE -d $AZURE_COSMOSDB_DATABASE_NAME -n "users" --partition-key-path "/id"
 
   AZURE_COSMOSDB_PRIMARY_KEY=$(az cosmosdb keys list --name $AZURE_COSMOSDB_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --type keys --query "primaryMasterKey" | tr -d '"')
-  AZURE_COSMOSDB_PRIMARY_ENDPOINT=$(az cosmosdb show --name $AZURE_COSMOSDB_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --query "writeLocations[0].documentEndpoint" | tr -d '"')
+  AZURE_COSMOSDB_PRIMARY_ENDPOINT=$(az cosmosdb show --name $AZURE_COSMOSDB_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --query "documentEndpoint" | tr -d '"')
   
   # write the secrets to the appropriate region secret file
   add_secret AZURE_COSMOSDB_KEY $AZURE_COSMOSDB_PRIMARY_KEY "$SECRET_FILES"
@@ -83,7 +121,7 @@ if $DEPLOY_COSMOSDB_POSTGRESQL; then
   --resource-group $AZURE_RESOURCE_GROUP \
   --subscription $AZURE_SUBSCRIPTION \
   --enable-ha false \
-  --coordinator-v-cores 4 \
+  --coordinator-v-cores 2 \
   --coordinator-server-edition "GeneralPurpose" \
   --coordinator-storage 131072 \
   --enable-shards-on-coord true \
@@ -98,7 +136,7 @@ if $DEPLOY_COSMOSDB_POSTGRESQL; then
   --source-resource-id $(az cosmosdb postgres cluster show -n $AZURE_COSMOSDB_POSTGRESQL_NAME_BASE${regions[0]} -g $AZURE_RESOURCE_GROUP --subscription $AZURE_SUBSCRIPTION --query "id" | tr -d '"')
 
   AZURE_POSTGRES_USER=$(az cosmosdb postgres cluster show -n $AZURE_COSMOSDB_POSTGRESQL_NAME_BASE${regions[0]} -g $AZURE_RESOURCE_GROUP --subscription $AZURE_SUBSCRIPTION --query "administratorLogin" | tr -d '"')
-  AZURE_POSTGRES_URI=$(az cosmosdb postgres cluster show -g rg-Tukano-60045-60174 -n sqltukano6004560174 --query "serverNames[0].fullyQualifiedDomainName" | tr -d '"')
+  AZURE_POSTGRES_URI=$(az cosmosdb postgres cluster show -g $AZURE_RESOURCE_GROUP -n $AZURE_COSMOSDB_POSTGRESQL_NAME_BASE${regions[0]} --query "serverNames[0].fullyQualifiedDomainName" | tr -d '"')
   AZURE_POSTGRES_JDBC="jdbc:postgresql://$AZURE_POSTGRES_URI:5432/citus?sslmode=require"
 
   add_secret HIBERNATE_USERNAME $AZURE_POSTGRES_USER "$SECRET_FILES"
@@ -137,9 +175,14 @@ do
   if $DEPLOY_APP; then
     export AZURE_JAVA_PACKAGING="war"
     cp $region.secrets $SECRETS_FILE_LOCATION
-    envsubst "$(printf '${%s} ' ${!AZURE*})" < ../pom.xml > ../_pom.xml && \
-    mvn -f ../_pom.xml clean compile package azure-webapp:deploy
-    rm ../_pom.xml
+    if $LOCAL_TOMCAT; then
+      envsubst "$(printf '${%s} ' ${!AZURE*})" < ../pom.xml > ../_pom.xml && \
+      mvn -f ../_pom.xml clean compile package tomcat7:redeploy
+    else
+      envsubst "$(printf '${%s} ' ${!AZURE*})" < ../pom.xml > ../_pom.xml && \
+      mvn -f ../_pom.xml clean compile package azure-webapp:deploy
+    fi
+      rm ../_pom.xml
   fi
 
   if $DEPLOY_FUNCTIONS; then
