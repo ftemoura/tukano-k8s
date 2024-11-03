@@ -24,7 +24,7 @@ add_secret() {
 
 export AZURE_RESOURCE_GROUP=rg-Tukano-60045-60174
 export AZURE_RESOURCE_GROUP_LOCATION=francecentral
-export AZURE_APP_NAME_BASE=astukano6004560174T # TESTING
+export AZURE_APP_NAME_BASE=astukano6004560174 # TESTING
 export AZURE_REDIS_NAME_BASE=redistukano6004560174
 export AZURE_COSMOSDB_NAME_BASE=cosmostukano6004560174
 export AZURE_COSMOSDB_DATABASE_NAME=db-$AZURE_COSMOSDB_NAME_BASE
@@ -42,12 +42,12 @@ add_secret AZURE_REGION ${regions[0]} ${secret_files[0]}
 add_secret AZURE_REGION ${regions[1]} ${secret_files[1]}
 
 DEPLOY_BLOBS=false
-DEPLOY_COSMOSDB_POSTGRESQL=true
+DEPLOY_COSMOSDB_POSTGRESQL=false
 DEPLOY_COSMOSDB=false
 DEPLOY_REDIS=false
-DEPLOY_FUNCTIONS=true
-DEPLOY_APP=false
-DEPLOY_TRAFFIC_MANAGER=false
+DEPLOY_FUNCTIONS=false
+DEPLOY_APP=true
+DEPLOY_TRAFFIC_MANAGER=true
 LOCAL_TOMCAT=false
 
 if $DEPLOY_TRAFFIC_MANAGER; then
@@ -60,29 +60,6 @@ az network traffic-manager profile create \
     --unique-dns-name $AZURE_TRAFFIC_MANAGER_NAME_BASE  \
     --ttl 30 \
 --port 443
-
-App1ResourceId=$(az webapp show --name $AZURE_APP_NAME_BASE${regions[1]} --resource-group $AZURE_RESOURCE_GROUP --query id --output tsv)
-
-az network traffic-manager endpoint create \
-    --name $AZURE_APP_NAME_BASE${regions[1]} \
-    --resource-group $AZURE_RESOURCE_GROUP \
-    --profile-name $AZURE_TRAFFIC_MANAGER \
-    --type azureEndpoints \
-    --target-resource-id $App1ResourceId \
-    --priority 2 \
-    --endpoint-status Enabled
-
-
-App2ResourceId=$(az webapp show --name $AZURE_APP_NAME_BASE${regions[0]} --resource-group $AZURE_RESOURCE_GROUP --query id --output tsv)
-
-az network traffic-manager endpoint create \
-    --name $AZURE_APP_NAME_BASE${regions[0]} \
-    --resource-group $AZURE_RESOURCE_GROUP \
-    --profile-name $AZURE_TRAFFIC_MANAGER \
-    --type azureEndpoints \
-    --target-resource-id  $App2ResourceId \
-    --priority 1 \
-    --endpoint-status Enabled
 fi
 
 az group create -l $AZURE_RESOURCE_GROUP_LOCATION -n $AZURE_RESOURCE_GROUP
@@ -125,6 +102,8 @@ if $DEPLOY_COSMOSDB_POSTGRESQL; then
   --coordinator-server-edition "GeneralPurpose" \
   --coordinator-storage 131072 \
   --enable-shards-on-coord true \
+  --coord-public-ip-access true \
+  --node-enable-public-ip-access true \
   --node-count 0 \
   --administrator-login-password $AZURE_COSMOSDB_POSTGRESQL_PWD
 
@@ -195,3 +174,27 @@ do
 
   let INDEX=${INDEX}+1
 done
+
+if $DEPLOY_TRAFFIC_MANAGER; then
+
+  app_id1=$(az webapp show --name $AZURE_APP_NAME_BASE${regions[0]} --resource-group $AZURE_RESOURCE_GROUP --query id --output tsv)
+  app_id2=$(az webapp show --name $AZURE_APP_NAME_BASE${regions[1]} --resource-group $AZURE_RESOURCE_GROUP --query id --output tsv)
+
+  az network traffic-manager endpoint create \
+      --name $AZURE_APP_NAME_BASE${regions[0]} \
+      --resource-group $AZURE_RESOURCE_GROUP \
+      --profile-name $AZURE_TRAFFIC_MANAGER_NAME_BASE \
+      --type azureEndpoints \
+      --target-resource-id  $app_id1 \
+      --priority 1 \
+      --endpoint-status Enabled
+    
+  az network traffic-manager endpoint create \
+      --name $AZURE_APP_NAME_BASE${regions[1]} \
+      --resource-group $AZURE_RESOURCE_GROUP \
+      --profile-name $AZURE_TRAFFIC_MANAGER_NAME_BASE \
+      --type azureEndpoints \
+      --target-resource-id $app_id2 \
+      --priority 2 \
+      --endpoint-status Enabled
+fi
