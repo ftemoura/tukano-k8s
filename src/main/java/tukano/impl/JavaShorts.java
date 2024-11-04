@@ -24,6 +24,7 @@ import tukano.impl.cache.ShortsCache;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
 import tukano.impl.database.CosmosDBShorts;
+import tukano.impl.database.PostegreShorts;
 import tukano.impl.database.ShortsDatabse;
 import tukano.impl.rest.MainApplication;
 import utils.FakeSecurityContext;
@@ -45,7 +46,7 @@ public class JavaShorts implements Shorts {
 	
 	private JavaShorts() {
 		this.cache = new RedisCacheShorts();
-		this.dbImpl = new CosmosDBShorts();
+		this.dbImpl = new PostegreShorts();
 	}
 	
 	@Override
