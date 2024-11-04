@@ -134,6 +134,10 @@ public interface Result<T> {
 			case NOT_FOUND -> HttpStatus.NOT_FOUND;
 			case CONFLICT -> HttpStatus.CONFLICT;
 			case PRECONDITION_FAILED -> HttpStatus.PRECONDITION_FAILED;
+			case FORBIDDEN -> HttpStatus.FORBIDDEN;
+			case BAD_REQUEST -> HttpStatus.BAD_REQUEST;
+			case NOT_IMPLEMENTED -> HttpStatus.NOT_IMPLEMENTED;
+			case TIMEOUT -> HttpStatus.REQUEST_TIMEOUT;
 			default -> HttpStatus.INTERNAL_SERVER_ERROR;
 		};
 	}
