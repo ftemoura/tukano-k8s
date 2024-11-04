@@ -46,7 +46,7 @@ DEPLOY_COSMOSDB_POSTGRESQL=false
 DEPLOY_COSMOSDB=false
 DEPLOY_REDIS=false
 DEPLOY_FUNCTIONS=false
-DEPLOY_APP=true
+DEPLOY_APP=false
 DEPLOY_TRAFFIC_MANAGER=true
 LOCAL_TOMCAT=false
 
@@ -177,24 +177,32 @@ done
 
 if $DEPLOY_TRAFFIC_MANAGER; then
 
-  app_id1=$(az webapp show --name $AZURE_APP_NAME_BASE${regions[0]} --resource-group $AZURE_RESOURCE_GROUP --query id --output tsv)
-  app_id2=$(az webapp show --name $AZURE_APP_NAME_BASE${regions[1]} --resource-group $AZURE_RESOURCE_GROUP --query id --output tsv)
+for region in $AZURE_REGIONS
+do
+  if [ $region == francecentral ];then
+    continue
+  fi
+  let priority=${INDEX}+10
+  az network traffic-manager endpoint create \
+      --name $AZURE_APP_NAME_BASE$region \
+      --resource-group $AZURE_RESOURCE_GROUP \
+      --profile-name $AZURE_TRAFFIC_MANAGER_NAME_BASE \
+      --type azureEndpoints \
+      --target-resource-id  $(az webapp show --name $AZURE_APP_NAME_BASE$region --resource-group $AZURE_RESOURCE_GROUP --query id --output tsv) \
+      --priority $priority \
+      --endpoint-status Enabled
 
-  az network traffic-manager endpoint create \
-      --name $AZURE_APP_NAME_BASE${regions[0]} \
-      --resource-group $AZURE_RESOURCE_GROUP \
-      --profile-name $AZURE_TRAFFIC_MANAGER_NAME_BASE \
-      --type azureEndpoints \
-      --target-resource-id  $app_id1 \
-      --priority 1 \
-      --endpoint-status Enabled
-    
-  az network traffic-manager endpoint create \
-      --name $AZURE_APP_NAME_BASE${regions[1]} \
-      --resource-group $AZURE_RESOURCE_GROUP \
-      --profile-name $AZURE_TRAFFIC_MANAGER_NAME_BASE \
-      --type azureEndpoints \
-      --target-resource-id $app_id2 \
-      --priority 2 \
-      --endpoint-status Enabled
+  FQDN=$(az network traffic-manager profile show --name $AZURE_TRAFFIC_MANAGER_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --query dnsConfig.fqdn --output tsv)
+  az webapp config ssl create --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_APP_NAME_BASE$region --hostname $FQDN
+  while true;
+  do
+    THUMBPRINT=$(az webapp config ssl show -g rg-Tukano-60045-60174 --certificate-name $FQDN --query "thumbprint" --output tsv)
+    if [ $? -eq 0 ]; then
+      break
+    fi
+    sleep 10
+  done
+  az webapp config ssl bind --certificate-thumbprint $THUMBPRINT --name $AZURE_APP_NAME_BASE$region --resource-group $AZURE_RESOURCE_GROUP --ssl-type SNI
+  let INDEX=${INDEX}+1
+done
 fi
