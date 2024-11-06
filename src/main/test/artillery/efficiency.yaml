@@ -10,7 +10,7 @@ config:
       arrivalRate: 1
   payload:
     path: ./data/random_users.csv
-    order: sequence
+    order: random
     #loadAll: true
     skipHeader: true
     delimiter: ","
