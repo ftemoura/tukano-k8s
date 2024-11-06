@@ -7,7 +7,7 @@ RESOURCE_GROUP=containers-test-60174
 ACR_NAME=acrcontainerstest60174
 CONTAINER_NAME=containers-test-60174
 IMAGE_NAME=artillery
-SERVER_URI=https://tukano-60045-60174-as.azurewebsites.net/rest
+SERVER_URI=http://astukano6004560174.trafficmanager.net/rest
 
 az group create --name $RESOURCE_GROUP --location "$LOCATION_RG"
 az acr create --resource-group $RESOURCE_GROUP --name $ACR_NAME --sku Basic --admin-enabled true

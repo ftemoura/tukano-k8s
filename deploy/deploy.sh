@@ -31,12 +31,15 @@ add_secret() {
         fi
       done
     else
-      (flock -n 9 
-        sed -i "/$secret_key/c\\$secret_key=$secret_value" $secrets_file
-      ) 9> /var/tmp/lock
+      while true;
+      do
+        (flock -n 9 
+          sed -i "/$secret_key/c\\$secret_key=$secret_value" $secrets_file
+        ) 9> /var/tmp/lock
       if [ $? -eq 0 ]; then
           break
       fi
+      done
     fi
   done
 }
@@ -69,8 +72,8 @@ DEPLOY_COSMOSDB=false
 DEPLOY_REDIS=false
 DEPLOY_FUNCTIONS=false
 DEPLOY_APP=false
-DEPLOY_FUNCTIONS_TRAFFIC_MANAGER=true
-DEPLOY_APP_TRAFFIC_MANAGER=true
+DEPLOY_FUNCTIONS_TRAFFIC_MANAGER=false
+DEPLOY_APP_TRAFFIC_MANAGER=false
 DO_CERTIFICATE=false
 LOCAL_TOMCAT=false
 
@@ -79,7 +82,7 @@ main() {
   add_secret AZURE_REGION ${regions[1]} ${secret_files[1]}
   add_secret TOKEN_SECRET $TOKEN_SECRET "$SECRET_FILES"
   add_secret USED_DB_TYPE $USED_DB_TYPE "$SECRET_FILES"
-  add_secret AZURE_FUNCTIONS_URL http://$AZURE_FUNCTIONS_NAME_BASE$AZURE_TRAFFIC_MANAGER_SUFFIX  "$SECRET_FILES"
+  add_secret AZURE_FUNCTIONS_URL http://$AZURE_FUNCTIONS_NAME_BASE$AZURE_TRAFFIC_MANAGER_SUFFIX/api  "$SECRET_FILES"
   az group create -l $AZURE_RESOURCE_GROUP_LOCATION -n $AZURE_RESOURCE_GROUP 1> /dev/null
   export AZURE_SUBSCRIPTION=$(az account show --query "id" | tr -d '"')
   if $DEPLOY_COSMOSDB; then
