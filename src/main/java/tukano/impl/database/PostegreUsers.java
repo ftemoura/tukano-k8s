@@ -38,15 +38,13 @@ public class PostegreUsers implements UsersDatabase {
     }
 
     @Override
-    public Result<User> deleteUser(String userId) {//TODO Esta retornar not found primeiro
+    public Result<User> deleteUser(String userId) {
         return DB.transaction( hibernate -> {
             return errorOrResult( DB.getOne( userId, User.class), user -> {
                 Result<User> userDelRes = DB.deleteOne(user);
                 // Delete user shorts and related info asynchronously in a separate thread
-                //Executors.defaultThreadFactory().newThread(() -> {
-                JavaShorts.getInstance().deleteAllShorts(userId, /*Token.get(userId)*/ Token.get(Token.Service.INTERNAL, userId));
-                JavaBlobs.getInstance().deleteAllBlobs(userId, /*Token.get(userId)*/ Token.get(Token.Service.INTERNAL, userId));
-                //}).start();
+                JavaShorts.getInstance().deleteAllShorts(userId, Token.get(Token.Service.INTERNAL, userId));
+                JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(Token.Service.INTERNAL, userId));
                 return userDelRes;
             });
         });

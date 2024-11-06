@@ -37,6 +37,14 @@ public class ConfigLoader {
         return instance;
     }
 
+    public String getFunctionsURL() {
+        return secrets.getProperty("AZURE_FUNCTIONS_URL");
+    }
+
+    public String getTokenSecret() {
+        return secrets.getProperty("TOKEN_SECRET");
+    }
+
     public String getRegion() {
         return secrets.getProperty("AZURE_REGION");
     }

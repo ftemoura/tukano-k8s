@@ -9,7 +9,7 @@ import tukano.impl.JavaBlobs;
 import tukano.impl.JavaShorts;
 import tukano.impl.JavaUsers;
 import tukano.impl.Token;
-import utils.IP;
+import utils.ConfigLoader;
 
 public class MainApplication extends Application
 {
@@ -17,7 +17,7 @@ public class MainApplication extends Application
     private Set<Class<?>> resources = new HashSet<>();
 
     static final String INETADDR_ANY = "0.0.0.0";
-    static String SERVER_BASE_URI = "https://fun60045northeurope.azurewebsites.net/lab5";//TODO mudar feito para dar no docker
+    static String FUNCTIONS_BASE_URI = ConfigLoader.getInstance().getFunctionsURL();
 
     public static final int PORT = 8080;
 
@@ -35,8 +35,8 @@ public class MainApplication extends Application
         resources.add(RestShortsResource.class);
         resources.add(RestUsersResource.class);
         resources.add(AuthenticationFilter.class);
-        serverURI = String.format(SERVER_BASE_URI, PORT);
-        Token.setSecret("secret"); // TODO
+        serverURI = String.format(FUNCTIONS_BASE_URI, PORT);
+        Token.setSecret(ConfigLoader.getInstance().getTokenSecret());
     }
 
     @Override

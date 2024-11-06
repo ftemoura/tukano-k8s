@@ -31,6 +31,7 @@
 					<deployment>
 						<resources>
 							<resource>
+								<type>war</type>
 								<directory>${project.basedir}/target</directory>
 								<includes>
 									<include>*.war</include>
@@ -124,7 +125,6 @@
 			<artifactId>azure-functions-java-library</artifactId>
 			<version>${azure.functions.java.library.version}</version>
 		</dependency>
-
 		<dependency>
 			<groupId>com.azure</groupId>
 			<artifactId>azure-cosmos</artifactId>

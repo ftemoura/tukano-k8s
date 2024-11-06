@@ -68,7 +68,7 @@ public class RedisCache {
             }
             return result;
         }catch (RedisTimestampTransactionException e) {
-            return Result.error(FORBIDDEN); //TODO MUDAR
+            return Result.error(FORBIDDEN);
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error(CONFLICT);

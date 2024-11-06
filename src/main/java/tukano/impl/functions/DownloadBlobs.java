@@ -11,6 +11,7 @@ import tukano.impl.JavaBlobs;
 import tukano.impl.JavaShorts;
 import tukano.impl.Token;
 import tukano.impl.database.ShortsDatabse;
+import utils.ConfigLoader;
 
 import static tukano.api.Result.statusFromErrorCode;
 
@@ -29,8 +30,9 @@ public class DownloadBlobs {
     private final Blobs javaBlobs = JavaBlobs.getInstance();
 
     static {
-        Token.setSecret("secret");//TODO
+        Token.setSecret(ConfigLoader.getInstance().getTokenSecret());
     }
+
     @FunctionName(HTTP_FUNCTION_NAME)
     public HttpResponseMessage run(
             @HttpTrigger(

@@ -9,6 +9,7 @@ import tukano.api.Blobs;
 import tukano.api.Result;
 import tukano.impl.JavaBlobs;
 import tukano.impl.Token;
+import utils.ConfigLoader;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -27,7 +28,7 @@ public class UploadBlobs {
     private final Blobs javaBlobs = JavaBlobs.getInstance();
 
     static {
-        Token.setSecret("secret");//TODO
+        Token.setSecret(ConfigLoader.getInstance().getTokenSecret());
     }
     @FunctionName(HTTP_FUNCTION_NAME)
     public HttpResponseMessage run(

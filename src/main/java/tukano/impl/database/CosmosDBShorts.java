@@ -80,7 +80,7 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
     }
 
     @Override
-    public Result<Following> follow(Following f, boolean isFollowing) {//TODO é preciso transação?
+    public Result<Following> follow(Following f, boolean isFollowing) {
         FollowingDAO followingDAO = new FollowingDAO(f);
         return isFollowing? super.insertOne(followingDAO, FOLLOWS_CONTAINER_NAME) : super.deleteOne(followingDAO, FOLLOWS_CONTAINER_NAME);
     }
@@ -94,7 +94,7 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
     }
 
     @Override
-    public Result<Likes> like(Likes l, boolean isLiked) {//TODO é preciso transação?
+    public Result<Likes> like(Likes l, boolean isLiked) {
         LikesDAO likesDAO = new LikesDAO(l);
         return isLiked ? super.insertOne(likesDAO, LIKES_CONTAINER_NAME) : super.deleteOne(likesDAO, LIKES_CONTAINER_NAME);
     }
@@ -123,7 +123,7 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
     }
 
     @Override
-    public Result<Void> deleteAllShorts(String userId, String token) {// TODO como é que vamos fazer uma transação aqui?
+    public Result<Void> deleteAllShorts(String userId, String token) {
 
         String query1 = format("SELECT c.id FROM %s c WHERE c.ownerId = '%s'", SHORTS_CONTAINER_NAME, userId);
         Result<List<Short>> shortsToDeleteRes = super.query(query1, SHORTS_CONTAINER_NAME, Short.class);
