@@ -23,10 +23,9 @@ import tukano.impl.cache.RedisCacheShorts;
 import tukano.impl.cache.ShortsCache;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
-import tukano.impl.database.CosmosDBShorts;
-import tukano.impl.database.PostegreShorts;
-import tukano.impl.database.ShortsDatabse;
+import tukano.impl.database.*;
 import tukano.impl.rest.MainApplication;
+import utils.ConfigLoader;
 import utils.FakeSecurityContext;
 
 public class JavaShorts implements Shorts {
@@ -46,7 +45,13 @@ public class JavaShorts implements Shorts {
 	
 	private JavaShorts() {
 		this.cache = new RedisCacheShorts();
-		this.dbImpl = new PostegreShorts();
+
+		if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.COSMOS.toString()))
+			this.dbImpl = new CosmosDBShorts();
+		else if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.COSMOS.toString()))
+			this.dbImpl = new PostegreShorts();
+		else Log.info(() -> format("Invalid DB Type"));
+
 	}
 	
 	@Override

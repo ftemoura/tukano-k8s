@@ -18,8 +18,8 @@ import tukano.api.User;
 import tukano.api.Users;
 import tukano.impl.cache.RedisCacheUsers;
 import tukano.impl.cache.UsersCache;
-import tukano.impl.database.CosmosBDUsers;
-import tukano.impl.database.UsersDatabase;
+import tukano.impl.database.*;
+import utils.ConfigLoader;
 
 public class JavaUsers implements Users {
 
@@ -39,7 +39,12 @@ public class JavaUsers implements Users {
 	
 	private JavaUsers() {
 		this.cache = new RedisCacheUsers();
-		this.dbImpl = new CosmosBDUsers();
+
+		if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.COSMOS.toString()))
+			this.dbImpl = new CosmosBDUsers();
+		else if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.COSMOS.toString()))
+			this.dbImpl = new PostegreUsers();
+		else Log.info(() -> format("Invalid DB Type"));
 	}
 	
 	@Override

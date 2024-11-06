@@ -37,6 +37,10 @@ public class ConfigLoader {
         return instance;
     }
 
+    public String getUsedDbType() {
+        return secrets.getProperty("USED_DB_TYPE");
+    }
+
     public String getFunctionsURL() {
         return secrets.getProperty("AZURE_FUNCTIONS_URL");
     }

@@ -16,7 +16,6 @@ public class MainApplication extends Application
     private Set<Object> singletons = new HashSet<>();
     private Set<Class<?>> resources = new HashSet<>();
 
-    static final String INETADDR_ANY = "0.0.0.0";
     static String FUNCTIONS_BASE_URI = ConfigLoader.getInstance().getFunctionsURL();
 
     public static final int PORT = 8080;

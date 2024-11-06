@@ -1,13 +1,18 @@
 #!/bin/bash
-set -x #echo on
 
 exe() { echo "\$ $@" ; "$@" ; } 
 
-#set -o allexport
-#source ./azure.config
-#set +o allexport
+set -o allexport
+source ./azure.secrets
+set +o allexport
 
 SECRETS_FILE_LOCATION="../src/main/resources/application.secrets"
+
+trap ctrl_c INT
+
+function ctrl_c() {
+  jobs="$(jobs -p)"; [ -n "$jobs" ] && kill $jobs
+}
 
 add_secret() {
   local secret_key="$1"
@@ -37,39 +42,50 @@ add_secret() {
   done
 }
 
-export AZURE_RESOURCE_GROUP=rg-Tukano-60045-60174-test2
-export AZURE_RESOURCE_GROUP_LOCATION=francecentral
-export AZURE_APP_NAME_BASE=astukano6004560174 # TESTING
-export AZURE_SERVICE_PLAN_BASE=asptukano6004560174 # TESTING
+
+export AZURE_REGIONS="francecentral canadacentral"
+export SECRET_FILES="./francecentral.secrets ./canadacentral.secrets"
+regions=($AZURE_REGIONS)
+secret_files=($SECRET_FILES)
+
+export USED_DB_TYPE=COSMOS
+export AZURE_RESOURCE_GROUP=rg-Tukano-60045-60174
+export AZURE_RESOURCE_GROUP_LOCATION=${regions[0]}
+export AZURE_APP_NAME_BASE=astukano6004560174
+export AZURE_SERVICE_PLAN_BASE=asptukano6004560174
 export AZURE_REDIS_NAME_BASE=redistukano6004560174
 export AZURE_COSMOSDB_NAME_BASE=cosmostukano6004560174
 export AZURE_COSMOSDB_DATABASE_NAME=db-$AZURE_COSMOSDB_NAME_BASE
 export AZURE_COSMOSDB_POSTGRESQL_NAME_BASE=sqltukano6004560174
 export AZURE_BLOB_STORAGE_ACCOUNT_NAME_BASE=stk60045
-export AZURE_REGIONS="westeurope canadacentral"
-export SECRET_FILES="./westeurope.secrets ./canadacentral.secrets"
 export AZURE_FUNCTIONS_NAME_BASE=funtukano6004560174
 export AZURE_FUNCTIONS_STORAGE_ACCOUNT_NAME=sfuntk6004560174
 export AZURE_TRAFFIC_MANAGER_NAME_BASE=tmtukano6004560174
 export AZURE_TRAFFIC_MANAGER_SUFFIX=.trafficmanager.net
 
-regions=($AZURE_REGIONS)
-secret_files=($SECRET_FILES)
 
-DEPLOY_BLOBS=true
+export AZURE_TRAFFIC_MANAGER_REGIONS=(
+  "GEO-EU GEO-ME GEO-AF"
+  "GEO-NA GEO-SA GEO-AP GEO-AS"
+)
+
+DEPLOY_BLOBS=false
 DEPLOY_COSMOSDB_POSTGRESQL=false
-DEPLOY_COSMOSDB=false
+DEPLOY_COSMOSDB=true
 DEPLOY_REDIS=false
-DEPLOY_FUNCTIONS=true
-DEPLOY_FUNCTIONS_TRAFFIC_MANAGER=true
-DEPLOY_APP=true
-DEPLOY_APP_TRAFFIC_MANAGER=true
+DEPLOY_FUNCTIONS=false
+DEPLOY_FUNCTIONS_TRAFFIC_MANAGER=false
+DEPLOY_APP=false
+DEPLOY_APP_TRAFFIC_MANAGER=false
 DO_CERTIFICATE=false
 LOCAL_TOMCAT=false
 
 main() {
   add_secret AZURE_REGION ${regions[0]} ${secret_files[0]}
   add_secret AZURE_REGION ${regions[1]} ${secret_files[1]}
+  add_secret TOKEN_SECRET $TOKEN_SECRET "$SECRET_FILES"
+  add_secret USED_DB_TYPE $USED_DB_TYPE "$SECRET_FILES"
+  add_secret AZURE_FUNCTIONS_URL http://$AZURE_FUNCTIONS_NAME_BASE$AZURE_TRAFFIC_MANAGER_SUFFIX  "$SECRET_FILES"
   az group create -l $AZURE_RESOURCE_GROUP_LOCATION -n $AZURE_RESOURCE_GROUP 1> /dev/null
   export AZURE_SUBSCRIPTION=$(az account show --query "id" | tr -d '"')
   if $DEPLOY_COSMOSDB; then
@@ -89,10 +105,10 @@ main() {
   fi
   wait
   if $DEPLOY_APP; then
-    (deploy_app_2) &
+    deploy_app_2
   fi
   if $DEPLOY_FUNCTIONS; then
-      deploy_functions
+    deploy_functions
   fi
 }
 
@@ -111,21 +127,22 @@ deploy_traffic_manager() {
   && echo "Created Traffic Manager"
 
   INDEX=0
-  for region in $AZURE_REGIONS
+  for sub_array_str in "${AZURE_TRAFFIC_MANAGER_REGIONS[@]}";
   do
+    GEO_ZONES=($sub_array_str)
     let priority=${INDEX}+1
     az network traffic-manager endpoint create \
-        --name $service$region \
+        --name $service${regions[INDEX]} \
         --resource-group $AZURE_RESOURCE_GROUP \
         --profile-name $AZURE_TRAFFIC_MANAGER_NAME_BASE \
         --type azureEndpoints \
-        --target-resource-id  $(az webapp show --name $service$region --resource-group $AZURE_RESOURCE_GROUP --query id --output tsv) \
-        --priority $priority \
+        --target-resource-id  $(az webapp show --name $service${regions[INDEX]} --resource-group $AZURE_RESOURCE_GROUP --query id --output tsv) \
+        --geo-mapping "${GEO_ZONES[*]}" \
         --endpoint-status Enabled 1> /dev/null
 
     if $DO_CERTIFICATE; then
       FQDN=$(az network traffic-manager profile show --name $AZURE_TRAFFIC_MANAGER_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --query dnsConfig.fqdn --output tsv)
-      az webapp config ssl create --resource-group $AZURE_RESOURCE_GROUP --certificate-name 1testscc --name $service$region --hostname $FQDN 1> /dev/null
+      az webapp config ssl create --resource-group $AZURE_RESOURCE_GROUP --certificate-name 1testscc --name $service${regions[INDEX]} --hostname $FQDN 1> /dev/null
       if [ $? -ne 0 ]; then
           echo "Can't create"
           return
@@ -138,7 +155,7 @@ deploy_traffic_manager() {
         fi
         sleep 10
       done
-      az webapp config ssl bind --certificate-thumbprint $THUMBPRINT --name $service$region --resource-group $AZURE_RESOURCE_GROUP --ssl-type SNI 1> /dev/null    
+      az webapp config ssl bind --certificate-thumbprint $THUMBPRINT --name $service${regions[INDEX]} --resource-group $AZURE_RESOURCE_GROUP --ssl-type SNI 1> /dev/null    
     fi
     let INDEX=${INDEX}+1
   done
@@ -146,22 +163,30 @@ deploy_traffic_manager() {
 }
 
 deploy_cosmosdb() {
-
-  if [ ${#regions[@]} -eq 1 ]; then
-    az cosmosdb create \
-    --name $AZURE_COSMOSDB_NAME_BASE \
-    --resource-group $AZURE_RESOURCE_GROUP 1> /dev/null \
-    && echo "Created CosmosDB for ${region[0]}"
-  else
-    az cosmosdb create \
-    --name $AZURE_COSMOSDB_NAME_BASE \
-    --resource-group $AZURE_RESOURCE_GROUP \
-    --locations regionName=${regions[0]} failoverPriority=0 isZoneRedundant=False \
-    --locations regionName=${regions[1]} failoverPriority=1 isZoneRedundant=True \
-    --enable-multiple-write-locations 1> /dev/null \
-    && echo "Created CosmosDB for ${region[0]} and ${region[1]}"
-  fi
-
+  while true;
+  do
+    if [ ${#regions[@]} -eq 1 ]; then
+      az cosmosdb create \
+      --name $AZURE_COSMOSDB_NAME_BASE \
+      --resource-group $AZURE_RESOURCE_GROUP 1> /dev/null \
+      && echo "Created CosmosDB for ${region[0]}"
+    else
+      az cosmosdb create \
+      --name $AZURE_COSMOSDB_NAME_BASE \
+      --resource-group $AZURE_RESOURCE_GROUP \
+      --locations regionName=${regions[0]} failoverPriority=0 isZoneRedundant=False \
+      --locations regionName=${regions[1]} failoverPriority=1 isZoneRedundant=True \
+      --enable-multiple-write-locations 1> /dev/null \
+      && echo "Created CosmosDB for ${region[0]} and ${region[1]}"
+    fi
+    if [ $? -eq 0 ]; then
+      break
+    fi
+    echo "CosmosDB deployment failed for regions $AZURE_REGIONS, deleting and retrying in 20 seconds."
+    sleep 10
+    az cosmosdb delete --name $AZURE_COSMOSDB_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --yes
+    sleep 10
+  done
   az cosmosdb sql database create -a $AZURE_COSMOSDB_NAME_BASE --name $AZURE_COSMOSDB_DATABASE_NAME --resource-group $AZURE_RESOURCE_GROUP --throughput "400" 1> /dev/null 
   az cosmosdb sql container create -g $AZURE_RESOURCE_GROUP -a $AZURE_COSMOSDB_NAME_BASE -d $AZURE_COSMOSDB_DATABASE_NAME -n "shorts" --partition-key-path "/id" 1> /dev/null 
   az cosmosdb sql container create -g $AZURE_RESOURCE_GROUP -a $AZURE_COSMOSDB_NAME_BASE -d $AZURE_COSMOSDB_DATABASE_NAME -n "likes" --partition-key-path "/shortId" 1> /dev/null 
@@ -299,7 +324,7 @@ deploy_functions() {
     rm ../_pom.xml
     let INDEX=${INDEX}+1
   done
-  if $DEPLOY_APP_TRAFFIC_MANAGER; then
+  if $DEPLOY_FUNCTIONS_TRAFFIC_MANAGER; then
     deploy_traffic_manager $AZURE_FUNCTIONS_NAME_BASE
   fi
 }
