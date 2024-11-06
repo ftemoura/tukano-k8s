@@ -1,6 +1,5 @@
 #!/bin/bash
 
-exe() { echo "\$ $@" ; "$@" ; } 
 
 set -o allexport
 source ./azure.secrets
@@ -60,23 +59,18 @@ export AZURE_COSMOSDB_POSTGRESQL_NAME_BASE=sqltukano6004560174
 export AZURE_BLOB_STORAGE_ACCOUNT_NAME_BASE=stk60045
 export AZURE_FUNCTIONS_NAME_BASE=funtukano6004560174
 export AZURE_FUNCTIONS_STORAGE_ACCOUNT_NAME=sfuntk6004560174
-export AZURE_TRAFFIC_MANAGER_NAME_BASE=tmtukano6004560174
+export AZURE_TRAFFIC_MANAGER_NAME_BASE=tm
 export AZURE_TRAFFIC_MANAGER_SUFFIX=.trafficmanager.net
 
 
-export AZURE_TRAFFIC_MANAGER_REGIONS=(
-  "GEO-EU GEO-ME GEO-AF"
-  "GEO-NA GEO-SA GEO-AP GEO-AS"
-)
-
 DEPLOY_BLOBS=false
 DEPLOY_COSMOSDB_POSTGRESQL=false
-DEPLOY_COSMOSDB=true
+DEPLOY_COSMOSDB=false
 DEPLOY_REDIS=false
 DEPLOY_FUNCTIONS=false
-DEPLOY_FUNCTIONS_TRAFFIC_MANAGER=false
 DEPLOY_APP=false
-DEPLOY_APP_TRAFFIC_MANAGER=false
+DEPLOY_FUNCTIONS_TRAFFIC_MANAGER=true
+DEPLOY_APP_TRAFFIC_MANAGER=true
 DO_CERTIFICATE=false
 LOCAL_TOMCAT=false
 
@@ -110,39 +104,43 @@ main() {
   if $DEPLOY_FUNCTIONS; then
     deploy_functions
   fi
+  if $DEPLOY_FUNCTIONS_TRAFFIC_MANAGER; then
+      deploy_traffic_manager $AZURE_FUNCTIONS_NAME_BASE
+  fi
+  if $DEPLOY_APP_TRAFFIC_MANAGER; then
+    deploy_traffic_manager $AZURE_APP_NAME_BASE
+  fi
 }
 
 deploy_traffic_manager() {
   local service="$1"
 
   az network traffic-manager profile create \
-    --name $AZURE_TRAFFIC_MANAGER_NAME_BASE \
+    --name $AZURE_TRAFFIC_MANAGER_NAME_BASE$service \
     --resource-group $AZURE_RESOURCE_GROUP \
-    --routing-method Priority \
+    --routing-method Performance \
     --path '/' \
     --protocol "HTTPS" \
-    --unique-dns-name $AZURE_TRAFFIC_MANAGER_NAME_BASE  \
+    --unique-dns-name $service  \
     --ttl 30 \
     --port 443 1> /dev/null \
   && echo "Created Traffic Manager"
 
   INDEX=0
-  for sub_array_str in "${AZURE_TRAFFIC_MANAGER_REGIONS[@]}";
+  for region in $AZURE_REGIONS;
   do
-    GEO_ZONES=($sub_array_str)
     let priority=${INDEX}+1
     az network traffic-manager endpoint create \
-        --name $service${regions[INDEX]} \
+        --name $service${regions[$INDEX]} \
         --resource-group $AZURE_RESOURCE_GROUP \
-        --profile-name $AZURE_TRAFFIC_MANAGER_NAME_BASE \
+        --profile-name $AZURE_TRAFFIC_MANAGER_NAME_BASE$service \
         --type azureEndpoints \
-        --target-resource-id  $(az webapp show --name $service${regions[INDEX]} --resource-group $AZURE_RESOURCE_GROUP --query id --output tsv) \
-        --geo-mapping "${GEO_ZONES[*]}" \
+        --target-resource-id  $(az webapp show --name $service${regions[$INDEX]} --resource-group $AZURE_RESOURCE_GROUP --query id --output tsv) \
         --endpoint-status Enabled 1> /dev/null
 
     if $DO_CERTIFICATE; then
-      FQDN=$(az network traffic-manager profile show --name $AZURE_TRAFFIC_MANAGER_NAME_BASE --resource-group $AZURE_RESOURCE_GROUP --query dnsConfig.fqdn --output tsv)
-      az webapp config ssl create --resource-group $AZURE_RESOURCE_GROUP --certificate-name 1testscc --name $service${regions[INDEX]} --hostname $FQDN 1> /dev/null
+      FQDN=$(az network traffic-manager profile show --name $AZURE_TRAFFIC_MANAGER_NAME_BASE$service --resource-group $AZURE_RESOURCE_GROUP --query dnsConfig.fqdn --output tsv)
+      az webapp config ssl create --resource-group $AZURE_RESOURCE_GROUP --certificate-name 1testscc --name $service${regions[$INDEX]} --hostname $FQDN 1> /dev/null
       if [ $? -ne 0 ]; then
           echo "Can't create"
           return
@@ -290,9 +288,6 @@ deploy_app_1() {
     --runtime "TOMCAT:10.0-java17" 1> /dev/null && 
     echo "Deployed App"
   done
-  if $DEPLOY_APP_TRAFFIC_MANAGER; then
-    deploy_traffic_manager $AZURE_APP_NAME_BASE
-  fi
 }
 
 deploy_app_2() {
@@ -309,7 +304,7 @@ deploy_app_2() {
       envsubst "$(printf '${%s} ' ${!AZURE*})" < ../pom.xml > ../_pom.xml && \
       mvn -f ../_pom.xml clean compile package azure-webapp:deploy
     fi
-      #rm ../_pom.xml
+      rm ../_pom.xml
   done
 }
 
@@ -317,6 +312,7 @@ deploy_functions() {
   INDEX=0
   for region in $AZURE_REGIONS
   do
+    export AZURE_REGION=$region
     export AZURE_JAVA_PACKAGING="jar"
     cp $region.secrets $SECRETS_FILE_LOCATION
     envsubst "$(printf '${%s} ' ${!AZURE*})" < ../pom.xml > ../_pom.xml && \
@@ -324,8 +320,5 @@ deploy_functions() {
     rm ../_pom.xml
     let INDEX=${INDEX}+1
   done
-  if $DEPLOY_FUNCTIONS_TRAFFIC_MANAGER; then
-    deploy_traffic_manager $AZURE_FUNCTIONS_NAME_BASE
-  fi
 }
 main
