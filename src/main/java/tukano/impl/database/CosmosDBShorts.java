@@ -16,6 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static tukano.api.Result.*;
@@ -112,12 +113,17 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
         String query = format("SELECT c.id FROM %s c WHERE c.follower = '%s'", FOLLOWS_CONTAINER_NAME, userId);
         Result<List<Following>> follows = super.query(query, FOLLOWS_CONTAINER_NAME, Following.class);
         if(!follows.isOK()) return error(follows.error());
-        List<String> followees = new LinkedList<>(follows.value().stream().map(Following::getFollowee).toList());
-        followees.add(userId);
 
-        Map<String, Object> params = Map.of("followees", followees);
-        String query2 = format("SELECT c.id, c.timestamp FROM %s c WHERE c.ownerId IN @followees ORDER BY c.timestamp DESC", SHORTS_CONTAINER_NAME);
-        Result<List<Short>> shrts = super.query(query2, SHORTS_CONTAINER_NAME, params, Short.class);
+        String inBody = follows.value().stream()
+                .map(id -> "\"" + id + "\"")
+                .collect(Collectors.joining(", "));
+        if (inBody.isEmpty())
+            inBody = "\"" + userId + "\"";
+        else
+            inBody = inBody + ", \"" + userId + "\"";
+        System.out.println(inBody);
+        String query2 = format("SELECT c.id, c.timestamp FROM %s c WHERE c.ownerId IN (%s) ORDER BY c.timestamp DESC", SHORTS_CONTAINER_NAME, inBody);
+        Result<List<Short>> shrts = super.query(query2, SHORTS_CONTAINER_NAME, Short.class);
         if(!shrts.isOK()) return error(shrts.error());
         return ok(shrts.value().stream().map(Short::getShortId).toList());
     }
