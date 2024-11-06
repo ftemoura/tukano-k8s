@@ -121,7 +121,6 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
             inBody = "\"" + userId + "\"";
         else
             inBody = inBody + ", \"" + userId + "\"";
-        System.out.println(inBody);
         String query2 = format("SELECT c.id, c.timestamp FROM %s c WHERE c.ownerId IN (%s) ORDER BY c.timestamp DESC", SHORTS_CONTAINER_NAME, inBody);
         Result<List<Short>> shrts = super.query(query2, SHORTS_CONTAINER_NAME, Short.class);
         if(!shrts.isOK()) return error(shrts.error());
