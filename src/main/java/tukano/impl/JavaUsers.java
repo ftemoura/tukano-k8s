@@ -42,7 +42,7 @@ public class JavaUsers implements Users {
 
 		if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.COSMOS.toString()))
 			this.dbImpl = new CosmosBDUsers();
-		else if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.COSMOS.toString()))
+		else if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.POSTGRESQL.toString()))
 			this.dbImpl = new PostegreUsers();
 		else Log.info(() -> format("Invalid DB Type"));
 	}

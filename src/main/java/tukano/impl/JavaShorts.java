@@ -48,7 +48,7 @@ public class JavaShorts implements Shorts {
 
 		if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.COSMOS.toString()))
 			this.dbImpl = new CosmosDBShorts();
-		else if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.COSMOS.toString()))
+		else if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.POSTGRESQL.toString()))
 			this.dbImpl = new PostegreShorts();
 		else Log.info(() -> format("Invalid DB Type"));
 
