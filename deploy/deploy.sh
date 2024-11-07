@@ -70,10 +70,13 @@ DEPLOY_BLOBS=false
 DEPLOY_COSMOSDB_POSTGRESQL=false
 DEPLOY_COSMOSDB=false
 DEPLOY_REDIS=false
-DEPLOY_FUNCTIONS=false
+
+DEPLOY_FUNCTIONS=true
 DEPLOY_APP=true
-DEPLOY_FUNCTIONS_TRAFFIC_MANAGER=false
-DEPLOY_APP_TRAFFIC_MANAGER=false
+
+DEPLOY_FUNCTIONS_TRAFFIC_MANAGER=true
+DEPLOY_APP_TRAFFIC_MANAGER=true
+
 DO_CERTIFICATE=false
 LOCAL_TOMCAT=false
 
@@ -221,19 +224,24 @@ deploy_postgresql() {
   --administrator-login-password $AZURE_COSMOSDB_POSTGRESQL_PWD 1> /dev/null \
   && echo "Created Postgres Cluster #1"
 
-  az cosmosdb postgres cluster create \
-  --name $AZURE_COSMOSDB_POSTGRESQL_NAME_BASE${regions[1]} \
-  --resource-group $AZURE_RESOURCE_GROUP \
-  --subscription $AZURE_SUBSCRIPTION \
-  --location ${regions[1]} \
-  --source-location ${regions[0]} \
-  --source-resource-id $(az cosmosdb postgres cluster show -n $AZURE_COSMOSDB_POSTGRESQL_NAME_BASE${regions[0]} -g $AZURE_RESOURCE_GROUP --subscription $AZURE_SUBSCRIPTION --query "id" | tr -d '"') 1> /dev/null \
-  && echo "Created Postgres Cluster #2"
+  az cosmosdb postgres firewall-rule create -n "rule1" --start-ip-address "0.0.0.0" --end-ip-address "255.255.255.255" --cluster-name $AZURE_COSMOSDB_POSTGRESQL_NAME_BASE${regions[0]} -g $AZURE_RESOURCE_GROUP
+
+  if [ ${#regions[@]} -ge 2 ]; then
+    az cosmosdb postgres cluster create \
+    --name $AZURE_COSMOSDB_POSTGRESQL_NAME_BASE${regions[1]} \
+    --resource-group $AZURE_RESOURCE_GROUP \
+    --subscription $AZURE_SUBSCRIPTION \
+    --location ${regions[1]} \
+    --source-location ${regions[0]} \
+    --source-resource-id $(az cosmosdb postgres cluster show -n $AZURE_COSMOSDB_POSTGRESQL_NAME_BASE${regions[0]} -g $AZURE_RESOURCE_GROUP --subscription $AZURE_SUBSCRIPTION --query "id" | tr -d '"') 1> /dev/null \
+    && echo "Created Postgres Cluster #2"
+  fi
 
   AZURE_POSTGRES_USER=$(az cosmosdb postgres cluster show -n $AZURE_COSMOSDB_POSTGRESQL_NAME_BASE${regions[0]} -g $AZURE_RESOURCE_GROUP --subscription $AZURE_SUBSCRIPTION --query "administratorLogin" | tr -d '"')
   AZURE_POSTGRES_URI=$(az cosmosdb postgres cluster show -g $AZURE_RESOURCE_GROUP -n $AZURE_COSMOSDB_POSTGRESQL_NAME_BASE${regions[0]} --query "serverNames[0].fullyQualifiedDomainName" | tr -d '"')
   AZURE_POSTGRES_JDBC="jdbc:postgresql://$AZURE_POSTGRES_URI:5432/citus?sslmode=require"
 
+  
   add_secret HIBERNATE_USERNAME $AZURE_POSTGRES_USER "$SECRET_FILES"
   add_secret HIBERNATE_PWD $AZURE_COSMOSDB_POSTGRESQL_PWD "$SECRET_FILES"
   add_secret HIBERNATE_JDBC_URL $AZURE_POSTGRES_JDBC "$SECRET_FILES"
