@@ -52,7 +52,7 @@ public class PostegreUsers implements UsersDatabase {
 
     @Override
     public Result<List<User>> searchUsers(String pattern) {
-        var query = format("SELECT * FROM User u WHERE UPPER(u.userId) LIKE '%%%s%%'", pattern.toUpperCase());
+        var query = format("SELECT * FROM \"User\" u WHERE UPPER(u.id) LIKE '%%%s%%'", pattern.toUpperCase());
         Log.info("Query: " + query);
         return ok(DB.sql(query, User.class)
                 .stream()

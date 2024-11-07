@@ -28,7 +28,7 @@ public class PostegreShorts implements ShortsDatabse{
         String shortId = shrt.getShortId();
         return DB.transaction( hibernate -> {
             hibernate.remove( shrt);
-            var query = format("DELETE Likes l WHERE l.shortId = '%s'", shortId);
+            var query = format("DELETE \"Likes\" l WHERE \"shortId\" = '%s'", shortId);
             hibernate.createMutationQuery(query).executeUpdate();
             //var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
             JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, shortId) );
@@ -37,7 +37,7 @@ public class PostegreShorts implements ShortsDatabse{
 
     @Override
     public Long getLikesCount(String shortId) {
-        var query = format("SELECT count(*) FROM Likes l WHERE l.shortId = '%s'", shortId);
+        var query = format("SELECT count(*) FROM \"Likes\" l WHERE \"shortId\" = '%s'", shortId);
         List<Long> res = DB.sql(query, Long.class);
         return res.get(0);
     }
@@ -48,7 +48,7 @@ public class PostegreShorts implements ShortsDatabse{
 
     @Override
     public Result<List<String>> getShorts(String userId) {
-        var query = format("SELECT s.shortId FROM Short s WHERE s.ownerId = '%s'", userId);
+        var query = format("SELECT \"shortId\" FROM \"Short\" s WHERE \"ownerId\" = '%s'", userId);
         return ok(DB.sql( query, String.class));
     }
 
@@ -59,7 +59,7 @@ public class PostegreShorts implements ShortsDatabse{
 
     @Override
     public Result<List<String>> followers(String userId) {
-        var query = format("SELECT f.follower FROM Following f WHERE f.followee = '%s'", userId);
+        var query = format("SELECT \"follower\" FROM \"Following\" f WHERE \"followee\" = '%s'", userId);
         return ok(DB.sql(query, String.class));
     }
 
@@ -70,19 +70,19 @@ public class PostegreShorts implements ShortsDatabse{
 
     @Override
     public Result<List<String>> likes(String shortId) {
-        var query = format("SELECT l.userId FROM Likes l WHERE l.shortId = '%s'", shortId);
+        var query = format("SELECT \"userId\" FROM \"Likes\" l WHERE \"shortId\" = '%s'", shortId);
         return ok(DB.sql(query, String.class));
     }
 
     @Override
     public Result<List<String>> getFeed(String userId) {
         final var QUERY_FMT = """
-				SELECT s.shortId, s.timestamp FROM Short s WHERE	s.ownerId = '%s'				
+				SELECT \"shortId\", \"timestamp\" FROM "Short" s WHERE	\"ownerId\" = '%s'				
 				UNION			
-				SELECT s.shortId, s.timestamp FROM Short s, Following f 
+				SELECT \"shortId\", \"timestamp\" FROM "Short" s, "Following" f 
 					WHERE 
-						f.followee = s.ownerId AND f.follower = '%s' 
-				ORDER BY s.timestamp DESC""";
+						\"followee\" = \"ownerId\" AND \"follower\" = '%s' 
+				ORDER BY \"timestamp\" DESC""";
         return  ok(DB.sql( format(QUERY_FMT, userId, userId), String.class));
     }
 
@@ -91,15 +91,15 @@ public class PostegreShorts implements ShortsDatabse{
         return DB.transaction( (hibernate) -> {
 
             //delete shorts
-            var query1 = format("DELETE Short s WHERE s.ownerId = '%s'", userId);
+            var query1 = format("DELETE \"Short\" s WHERE \"ownerId\" = '%s'", userId);
             hibernate.createMutationQuery(query1).executeUpdate();
 
             //delete follows
-            var query2 = format("DELETE Following f WHERE f.follower = '%s' OR f.followee = '%s'", userId, userId);
+            var query2 = format("DELETE \"Following\" f WHERE \"follower\" = '%s' OR \"followee\" = '%s'", userId, userId);
             hibernate.createMutationQuery(query2).executeUpdate();
 
             //delete likes
-            var query3 = format("DELETE Likes l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
+            var query3 = format("DELETE \"Likes\" l WHERE \"ownerId\" = '%s' OR \"userId\" = '%s'", userId, userId);
             hibernate.createMutationQuery(query3).executeUpdate();
 
         });

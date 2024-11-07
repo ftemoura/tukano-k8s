@@ -50,7 +50,7 @@ export SECRET_FILES="./francecentral.secrets ./canadacentral.secrets"
 regions=($AZURE_REGIONS)
 secret_files=($SECRET_FILES)
 
-export USED_DB_TYPE=COSMOS
+export USED_DB_TYPE=POSTGRESQL
 export AZURE_RESOURCE_GROUP=rg-Tukano-60045-60174
 export AZURE_RESOURCE_GROUP_LOCATION=${regions[0]}
 export AZURE_APP_NAME_BASE=astukano6004560174
@@ -71,7 +71,7 @@ DEPLOY_COSMOSDB_POSTGRESQL=false
 DEPLOY_COSMOSDB=false
 DEPLOY_REDIS=false
 DEPLOY_FUNCTIONS=false
-DEPLOY_APP=false
+DEPLOY_APP=true
 DEPLOY_FUNCTIONS_TRAFFIC_MANAGER=false
 DEPLOY_APP_TRAFFIC_MANAGER=false
 DO_CERTIFICATE=false
@@ -225,6 +225,7 @@ deploy_postgresql() {
   --name $AZURE_COSMOSDB_POSTGRESQL_NAME_BASE${regions[1]} \
   --resource-group $AZURE_RESOURCE_GROUP \
   --subscription $AZURE_SUBSCRIPTION \
+  --location ${regions[1]} \
   --source-location ${regions[0]} \
   --source-resource-id $(az cosmosdb postgres cluster show -n $AZURE_COSMOSDB_POSTGRESQL_NAME_BASE${regions[0]} -g $AZURE_RESOURCE_GROUP --subscription $AZURE_SUBSCRIPTION --query "id" | tr -d '"') 1> /dev/null \
   && echo "Created Postgres Cluster #2"

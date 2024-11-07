@@ -4,7 +4,6 @@
 		<!-- JDBC Database connection settings -->
 		<property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
 		<property name="connection.driver_class">org.postgresql.Driver</property>
-		<!-- JDBC connection pool settings ... using built-in test pool -->
 		<property name="connection.pool_size">64</property>
 		<!-- Echo the SQL to stdout -->
 		<property name="show_sql">true</property>
