@@ -29,7 +29,7 @@ public class PostegreShorts implements ShortsDatabse{
         return DB.transaction( hibernate -> {
             hibernate.remove( shrt);
             var query = format("DELETE FROM \"Likes\" l WHERE \"shortId\" = '%s'", shortId);
-            hibernate.createMutationQuery(query).executeUpdate();
+            hibernate.createNativeQuery( query, Likes.class).executeUpdate();
             //var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
             JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, shortId) );
         });
@@ -92,15 +92,15 @@ public class PostegreShorts implements ShortsDatabse{
 
             //delete shorts
             var query1 = format("DELETE FROM \"Short\" s WHERE \"ownerId\" = '%s'", userId);
-            hibernate.createMutationQuery(query1).executeUpdate();
+            hibernate.createNativeQuery(query1, Short.class).executeUpdate();
 
             //delete follows
             var query2 = format("DELETE FROM \"Following\" f WHERE \"follower\" = '%s' OR \"followee\" = '%s'", userId, userId);
-            hibernate.createMutationQuery(query2).executeUpdate();
+            hibernate.createNativeQuery(query2, Following.class).executeUpdate();
 
             //delete likes
             var query3 = format("DELETE FROM \"Likes\" l WHERE \"ownerId\" = '%s' OR \"userId\" = '%s'", userId, userId);
-            hibernate.createMutationQuery(query3).executeUpdate();
+            hibernate.createNativeQuery(query3, Likes.class).executeUpdate();
 
         });
     }
