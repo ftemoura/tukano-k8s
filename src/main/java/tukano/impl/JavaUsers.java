@@ -72,7 +72,7 @@ public class JavaUsers implements Users {
 			return Result.error(res.error());
 		} else {
 			NewCookie c = new NewCookie.Builder(Token.Service.AUTH.toString())
-					.value(Token.get(Token.Service.AUTH, userId))
+					.value(Token.get(Token.Service.AUTH, userId, Token.Role.USER))
 					.expiry(Date.from(Instant.now().plusMillis(Token.MAX_TOKEN_AGE)))
 					.path("/")
 					.build();
