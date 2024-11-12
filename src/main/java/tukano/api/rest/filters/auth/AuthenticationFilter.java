@@ -40,7 +40,7 @@ public class AuthenticationFilter implements ContainerRequestFilter
 
                 @Override
                 public boolean isUserInRole(String role) {
-                    return true;
+                    return Token.isEnoughRoleLevel(token, Token.Service.AUTH, Token.Role.valueOf(role));
                 }
 
                 @Override

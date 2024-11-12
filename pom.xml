@@ -15,34 +15,6 @@
 	<build>
 		<sourceDirectory>src</sourceDirectory>
 		<plugins>
-			<plugin>
-				<groupId>com.microsoft.azure</groupId>
-				<artifactId>azure-webapp-maven-plugin</artifactId>
-				<version>2.13.0</version>
-				<configuration>
-					<schemaVersion>V2</schemaVersion>
-					<pricingTier>S1</pricingTier>
-					<region>$AZURE_REGION</region>
-					<runtime>
-						<os>linux</os>
-						<javaVersion>Java 17</javaVersion>
-						<webContainer>Tomcat 10.0</webContainer>
-					</runtime>
-					<deployment>
-						<resources>
-							<resource>
-								<type>war</type>
-								<directory>${project.basedir}/target</directory>
-								<includes>
-									<include>*.war</include>
-								</includes>
-							</resource>
-						</resources>
-					</deployment>
-					<resourceGroup>$AZURE_RESOURCE_GROUP</resourceGroup>
-					<appName>$AZURE_APP_NAME_BASE$AZURE_REGION</appName>
-				</configuration>
-			</plugin>
 			<plugin><!-- TESTING ONLY-->
 				<groupId>org.apache.tomcat.maven</groupId>
 				<artifactId>tomcat7-maven-plugin</artifactId>
@@ -76,36 +48,6 @@
                     <target>17</target>
                 </configuration>
             </plugin>
-			<plugin>
-				<groupId>com.microsoft.azure</groupId>
-				<artifactId>azure-functions-maven-plugin</artifactId>
-				<version>${azure.functions.maven.plugin.version}</version>
-				<configuration>
-					<appName>$AZURE_FUNCTIONS_NAME_BASE$AZURE_REGION</appName>
-					<storageAccountName>$AZURE_FUNCTIONS_STORAGE_ACCOUNT_NAME</storageAccountName>
-					<resourceGroup>$AZURE_RESOURCE_GROUP</resourceGroup>
-					<region>$AZURE_REGION</region>
-					<disableAppInsights>false</disableAppInsights>
-					<buildJarWithDependencies>false</buildJarWithDependencies>
-					<runtime>
-						<javaVersion>17</javaVersion>
-					</runtime>
-					<appSettings>
-						<property>
-							<name>FUNCTIONS_EXTENSION_VERSION</name>
-							<value>~4</value>
-						</property>
-					</appSettings>
-				</configuration>
-				<executions>
-					<execution>
-						<id>package-functions</id>
-						<goals>
-							<goal>package</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 			<plugin>
 				<artifactId>maven-clean-plugin</artifactId>
 				<version>3.4.0</version>

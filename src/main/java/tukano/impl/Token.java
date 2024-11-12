@@ -2,7 +2,6 @@ package tukano.impl;
 
 import java.time.Instant;
 import java.util.Date;
-import java.util.List;
 import java.util.logging.Logger;
 
 import com.auth0.jwt.JWT;
@@ -11,7 +10,6 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
-import utils.Hash;
 
 public class Token {
 	private static Logger Log = Logger.getLogger(Token.class.getName());
@@ -29,6 +27,7 @@ public class Token {
 		INTERNAL // to be used between internal services
 	}
 
+	// Hierarchical RBAC
 	public enum Role{
 		USER(0),
 		ADMIN(1);
@@ -77,7 +76,11 @@ public class Token {
 		return JWT.decode(tokenStr).getSubject();
 	}
 
-	private static  DecodedJWT decode_token(String tokenStr, Service service) {
+	public static boolean isEnoughRoleLevel(String tokenStr, Service service, Role role) {
+		return Role.valueOf(decodeToken(tokenStr, service).getClaim("role").toString()).getLevel() >= role.getLevel();
+	}
+
+	private static  DecodedJWT decodeToken(String tokenStr, Service service) {
 		JWTVerifier verifier = JWT.require(algorithm)
 				.withIssuer(service.toString())
 				.build();
@@ -86,7 +89,7 @@ public class Token {
 	public static boolean isValid(String tokenStr, Service service, String id, Role role) {
 		DecodedJWT decodedJWT;
 		try {
-			decodedJWT = decode_token(tokenStr, service);
+			decodedJWT = decodeToken(tokenStr, service);
 			if (!decodedJWT.getSubject().equals(id) || // wrong id
 					(decodedJWT.getIssuedAt().getTime() + MAX_TOKEN_AGE < Instant.now().toEpochMilli()) || // is over
 					(Role.valueOf(decodedJWT.getClaim("role").toString()).getLevel() < role.getLevel()))// wrong role
@@ -102,7 +105,7 @@ public class Token {
 	public static boolean isValid(String tokenStr, Service service, String id) {
 		DecodedJWT decodedJWT;
 		try {
-			decodedJWT = decode_token(tokenStr, service);
+			decodedJWT = decodeToken(tokenStr, service);
 			if (!decodedJWT.getSubject().equals(id) || // wrong id
 					(decodedJWT.getIssuedAt().getTime() + MAX_TOKEN_AGE < Instant.now().toEpochMilli())) // is over
 				return false;
@@ -117,7 +120,7 @@ public class Token {
 	public static boolean isValid(String tokenStr, Service service) {
 		DecodedJWT decodedJWT;
 		try {
-			decodedJWT = decode_token(tokenStr, service);
+			decodedJWT = decodeToken(tokenStr, service);
 			if (decodedJWT.getIssuedAt().getTime() + MAX_TOKEN_AGE < Instant.now().toEpochMilli()) // is over
 				return false;
 
