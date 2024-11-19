@@ -6,6 +6,7 @@ import tukano.impl.JavaBlobs;
 import tukano.impl.JavaShorts;
 import tukano.impl.Token;
 import utils.DB;
+import utils.FakeSecurityContext;
 
 import java.util.List;
 import java.util.logging.Logger;
@@ -44,7 +45,7 @@ public class PostegreUsers implements UsersDatabase {
                 Result<User> userDelRes = DB.deleteOne(user);
                 // Delete user shorts and related info asynchronously in a separate thread
                 JavaShorts.getInstance().deleteAllShorts(userId, Token.get(Token.Service.INTERNAL, userId));
-                JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(Token.Service.INTERNAL, userId));
+                JavaBlobs.getInstance().deleteAllBlobs(FakeSecurityContext.get(userId), userId, Token.get(Token.Service.INTERNAL, userId));
                 return userDelRes;
             });
         });
