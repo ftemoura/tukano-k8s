@@ -120,11 +120,13 @@ public interface Result<T> {
 
 	static Result.ErrorCode errorCodeFromStatus(int status) {
 		return switch (status) {
-			case 200 -> OK;
-			case 404 -> NOT_FOUND;
-			case 409 -> CONFLICT;
-			case 412 -> PRECONDITION_FAILED;
-			default -> INTERNAL_ERROR;
+			case 200, 204 -> ErrorCode.OK;
+			case 409 -> ErrorCode.CONFLICT;
+			case 403 -> ErrorCode.FORBIDDEN;
+			case 404 -> ErrorCode.NOT_FOUND;
+			case 400 -> ErrorCode.BAD_REQUEST;
+            case 501 -> ErrorCode.NOT_IMPLEMENTED;
+			default -> ErrorCode.INTERNAL_ERROR;
 		};
 	}
 
