@@ -4,6 +4,7 @@ import tukano.api.Blobs;
 import tukano.api.Result;
 import tukano.api.Short;
 import tukano.api.User;
+import tukano.api.clients.RestBlobsClient;
 import tukano.impl.JavaBlobs;
 import tukano.impl.Token;
 import tukano.impl.data.Following;
@@ -18,6 +19,10 @@ import static tukano.api.Result.*;
 import static utils.DB.getOne;
 
 public class PostegreShorts implements ShortsDatabse{
+    private static RestBlobsClient blobs;
+    public PostegreShorts() {
+        blobs = new RestBlobsClient(/*tem que se mudar*/);
+    }
     @Override
     public Result<Short> createShort(Short shrt) {
         return DB.insertOne(shrt);
@@ -31,7 +36,7 @@ public class PostegreShorts implements ShortsDatabse{
             var query = format("DELETE FROM \"Likes\" l WHERE \"shortId\" = '%s'", shortId);
             hibernate.createNativeQuery( query, Likes.class).executeUpdate();
             //var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
-            JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, shortId) );
+            blobs.delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, shortId) );
         });
     }
 

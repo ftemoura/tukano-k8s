@@ -129,6 +129,14 @@ public class RestShortsClient extends RestClient implements Shorts{
 //                        .get());
 //    }
 
+    public Result<Void> _updateShortViews(String shortId, Long views) {
+        return super.toJavaResult(
+                target
+                        .path(shortId)
+                        .request()
+                        .put( Entity.entity(views, MediaType.APPLICATION_JSON)));
+    }
+
     @Override
     public Result<Short> createShort(SecurityContext sc, String userId) {
         throw new UnsupportedOperationException();
@@ -181,6 +189,6 @@ public class RestShortsClient extends RestClient implements Shorts{
 
     @Override
     public Result<Void> updateShortViews(String shortId, Long views) {
-        return null;
+        return super.reTry( () -> _updateShortViews(shortId, views));
     }
 }

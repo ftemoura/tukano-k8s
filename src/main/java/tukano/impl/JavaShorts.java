@@ -87,6 +87,7 @@ public class JavaShorts implements Shorts {
 		if(caheRes.isOK())
 			return caheRes;
 		var likes = dbImpl.getLikesCount(shortId);
+		// TODO no copy passamos a role do user
 		Result<Short> bdRes = errorOrValue(dbImpl.getShort(shortId), shrt -> shrt.copyWithLikes_And_Token( likes));
 		if(bdRes.isOK()) {
 			Executors.defaultThreadFactory().newThread(() -> {

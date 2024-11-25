@@ -13,6 +13,7 @@ import tukano.api.Blobs;
 import tukano.api.Result;
 import tukano.api.Short;
 import tukano.api.Shorts;
+import tukano.api.clients.RestShortsClient;
 import tukano.impl.cache.RedisCacheBlobs;
 import tukano.impl.rest.MainApplication;
 import tukano.impl.storage.AzureBlobStorage;
@@ -23,7 +24,7 @@ import utils.Hex;
 public class JavaBlobs implements Blobs {
 	private static Blobs instance;
 	private static Logger Log = Logger.getLogger(JavaBlobs.class.getName());
-	private final Shorts javaShorts;
+	private final RestShortsClient javaShorts;
 	public String baseURI;
 	private BlobStorage storage;
 	private RedisCacheBlobs cache;
@@ -38,12 +39,13 @@ public class JavaBlobs implements Blobs {
 	private JavaBlobs() {
 		storage = new AzureBlobStorage();
 		cache = new RedisCacheBlobs();
-		javaShorts = JavaShorts.getInstance();
+		//javaShorts = JavaShorts.getInstance();
 		baseURI = String.format("%s/%s/", MainApplication.serverURI, Blobs.NAME);
+		javaShorts = new RestShortsClient(baseURI);//TODO ESTOU A USER ESTE URL MAS DEPOIS TEM QUE SE MUDAR
 	}
 	
 	@Override
-	public Result<Void> upload(SecurityContext sc, String blobId, byte[] bytes, String token) {
+	public Result<Void> upload(String blobId, byte[] bytes, String token) {
 		Log.info(() -> format("upload : blobId = %s, sha256 = %s, token = %s\n", blobId, Hex.of(Hash.sha256(bytes)), token));
 		
 		if (!validBlobId(blobId, token))
@@ -53,7 +55,7 @@ public class JavaBlobs implements Blobs {
 	}
 
 	@Override
-	public Result<byte[]> download(SecurityContext sc, String blobId, String token) {
+	public Result<byte[]> download(String blobId, String token) {
 		Log.info(() -> format("download : blobId = %s, token=%s\n", blobId, token));
 
 		if( ! validBlobId( blobId, token ) )
@@ -88,7 +90,7 @@ public class JavaBlobs implements Blobs {
 	}
 
 	@Override
-	public Result<Void> downloadToSink(SecurityContext sc, String blobId, Consumer<byte[]> sink, String token) {
+	public Result<Void> downloadToSink(String blobId, Consumer<byte[]> sink, String token) {
 		Log.info(() -> format("downloadToSink : blobId = %s, token = %s\n", blobId, token));
 
 		if( ! validBlobId( blobId, token ) )
@@ -98,20 +100,20 @@ public class JavaBlobs implements Blobs {
 	}
 
 	@Override
-	public Result<Void> delete(SecurityContext sc, String blobId, String token) {
+	public Result<Void> delete(String blobId, String token) {
 		Log.info(() -> format("delete : blobId = %s, token=%s\n", blobId, token));
 	
-		if( ! validBlobId( blobId, token ) )
+		if( ! validBlobIdAndRole( blobId, token, Token.Role.ADMIN) )
 			return error(FORBIDDEN);
 
 		return storage.delete( toPath(blobId));
 	}
 	
 	@Override
-	public Result<Void> deleteAllBlobs(SecurityContext sc, String userId, String token) {
+	public Result<Void> deleteAllBlobs(String userId, String token) {
 		Log.info(() -> format("deleteAllBlobs : userId = %s, token=%s\n", userId, token));
 
-		if( ! Token.isValid( token, Token.Service.INTERNAL, userId, Token.Role.ADMIN) )
+		if( !validBlobIdAndRole(userId, token, Token.Role.ADMIN) )
 			return error(FORBIDDEN);
 		
 		return storage.deleteFolder( toPath(userId));
@@ -120,6 +122,11 @@ public class JavaBlobs implements Blobs {
 	private boolean validBlobId(String blobId, String token) {		
 		System.out.println( blobId);
 		return Token.isValid(token, Token.Service.BLOBS, blobId);
+	}
+
+	private boolean validBlobIdAndRole(String blobId, String token, Token.Role role) {
+		System.out.println( blobId);
+		return Token.isValid(token, Token.Service.BLOBS, blobId, role);
 	}
 
 	private String toPath(String blobId) {

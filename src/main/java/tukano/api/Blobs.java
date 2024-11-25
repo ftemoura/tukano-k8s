@@ -23,7 +23,7 @@ public interface Blobs {
 	 *         CONFLICT if a blobId exists but bytes do not match;
 	 *         FORBIDDEN if the blobId is not valid
 	 */
-	Result<Void> upload(SecurityContext sc, String blobId, byte[] bytes, String token);
+	Result<Void> upload(String blobId, byte[] bytes, String token);
 
 	/**
 	 * Downloads a short video blob resource in a single byte chunk of bytes.
@@ -32,7 +32,7 @@ public interface Blobs {
 	 * @return (OK, bytes), if the blob exists;
 	 * 			 NOT_FOUND, if no blob matches the provided blobId
 	 */
-	Result<byte[]> download(SecurityContext sc, String blobId, String token);
+	Result<byte[]> download(String blobId, String token);
 
 	/**
 	 * Downloads a short video blob resource as a result suitable for streaming
@@ -45,8 +45,8 @@ public interface Blobs {
 	 * @return (OK,), if the blob exists;
 	 *		   NOT_FOUND, if no blob matches the provided blobId
 	 */
-	default Result<Void> downloadToSink(SecurityContext sc, String blobId, Consumer<byte[]> sink, String token) {
-		var res = download(sc, blobId, token);
+	default Result<Void> downloadToSink(String blobId, Consumer<byte[]> sink, String token) {
+		var res = download(blobId, token);
 		if (!res.isOK())
 			return Result.error(res.error());
 
@@ -54,7 +54,7 @@ public interface Blobs {
 		return Result.ok();
 	}
 	
-	Result<Void> delete(SecurityContext sc, String blobId, String token );
+	Result<Void> delete(String blobId, String token );
 	
-	Result<Void> deleteAllBlobs(SecurityContext sc, String userId, String token );
+	Result<Void> deleteAllBlobs(String userId, String token );
 }

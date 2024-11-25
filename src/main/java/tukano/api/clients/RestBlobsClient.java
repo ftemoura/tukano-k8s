@@ -65,22 +65,22 @@ public class RestBlobsClient extends RestClient implements Blobs {
     }
 
     @Override
-    public Result<Void> upload(SecurityContext sc, String blobId, byte[] bytes, String token) {
+    public Result<Void> upload(String blobId, byte[] bytes, String token) {
         return super.reTry( () -> _upload(blobId, bytes, token));
     }
 
     @Override
-    public Result<byte[]> download(SecurityContext sc, String blobId, String token) {
+    public Result<byte[]> download(String blobId, String token) {
         return super.reTry( () -> _download(blobId, token));
     }
 
     @Override
-    public Result<Void> delete(SecurityContext sc, String blobId, String token) {
+    public Result<Void> delete(String blobId, String token) {
         return super.reTry( () -> _delete(blobId, token));
     }
 
     @Override
-    public Result<Void> deleteAllBlobs(SecurityContext sc, String userId, String password) {
+    public Result<Void> deleteAllBlobs(String userId, String password) {
         return super.reTry( () -> _deleteAllBlobs(userId, password));
     }
 }

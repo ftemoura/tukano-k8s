@@ -2,6 +2,7 @@ package tukano.impl.database;
 
 import tukano.api.*;
 import tukano.api.Short;
+import tukano.api.clients.RestBlobsClient;
 import tukano.impl.JavaBlobs;
 import tukano.impl.Token;
 import tukano.impl.data.Following;
@@ -29,8 +30,11 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
     private static final String FOLLOWS_CONTAINER_NAME = ConfigLoader.getInstance().getCosmosDBFollowsContainer();
     private static CosmosDBShorts instance;
 
+    private static RestBlobsClient blobs;
+
     public CosmosDBShorts() {
         super();
+        blobs = new RestBlobsClient(/*tem que se mudar*/);
     }
 
     public static synchronized CosmosDBLayer getInstance() {
@@ -51,7 +55,7 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
         Result<Short> result = errorOrResult(r, shortDAO -> super.deleteOne(shortDAO, SHORTS_CONTAINER_NAME, shortDAO.get_etag()));
         if (!result.isOK()) return error(result.error());
         //var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
-        JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, shortId) );
+        blobs.delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, shortId) );
         if (!result.isOK()) return error(result.error());
         return ok();
     }

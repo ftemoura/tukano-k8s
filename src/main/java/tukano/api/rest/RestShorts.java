@@ -2,14 +2,7 @@ package tukano.api.rest;
 
 import java.util.List;
 
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
@@ -32,6 +25,8 @@ public interface RestShorts {
 	String LIKES = "/likes";
 	String SHORTS = "/shorts";
 	String FOLLOWERS = "/followers";
+
+	String VIEWS = "/views";
 	
 	@POST
 	@AuthRequired
@@ -89,4 +84,9 @@ public interface RestShorts {
 	@Path("/{" + USER_ID + "}" + SHORTS)
 	void deleteAllShorts(@PathParam(USER_ID) String userId, @QueryParam(TOKEN) String token);
 
+	@PUT
+	//TODO METER UM TOKEN
+	@Path("/{" + SHORT_ID + "}" + VIEWS)
+	@Consumes(MediaType.APPLICATION_JSON)
+	void updateShortViews(@PathParam(SHORT_ID) String shortId, int views);
 }
