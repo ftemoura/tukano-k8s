@@ -21,7 +21,7 @@ import static utils.DB.getOne;
 public class PostegreShorts implements ShortsDatabse{
     private static RestBlobsClient blobs;
     public PostegreShorts() {
-        blobs = new RestBlobsClient(/*tem que se mudar*/);
+        blobs = new RestBlobsClient(MainApplication.serverURI);
     }
     @Override
     public Result<Short> createShort(Short shrt) {
@@ -29,14 +29,14 @@ public class PostegreShorts implements ShortsDatabse{
     }
 
     @Override
-    public Result<Void> deleteShort(Short shrt) {
+    public Result<Void> deleteShort(Short shrt, User deletedBy) {
         String shortId = shrt.getShortId();
         return DB.transaction( hibernate -> {
             hibernate.remove( shrt);
             var query = format("DELETE FROM \"Likes\" l WHERE \"shortId\" = '%s'", shortId);
             hibernate.createNativeQuery( query, Likes.class).executeUpdate();
             //var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
-            blobs.delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, shortId) );
+            blobs.delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, shortId, deletedBy.getRole()) );
         });
     }
 
@@ -93,6 +93,9 @@ public class PostegreShorts implements ShortsDatabse{
 
     @Override
     public Result<Void> deleteAllShorts(String userId, String token) {
+
+        if(Token.isValid(token, Token.Service.BLOBS, userId, Token.Role.ADMIN))
+            blobs.deleteAllBlobs(userId, token);
         return DB.transaction( (hibernate) -> {
 
             //delete shorts

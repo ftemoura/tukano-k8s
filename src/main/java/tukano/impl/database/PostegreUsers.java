@@ -44,8 +44,8 @@ public class PostegreUsers implements UsersDatabase {
             return errorOrResult( DB.getOne( userId, User.class), user -> {
                 Result<User> userDelRes = DB.deleteOne(user);
                 // Delete user shorts and related info asynchronously in a separate thread
-                JavaShorts.getInstance().deleteAllShorts(userId, Token.get(Token.Service.INTERNAL, userId));
-                JavaBlobs.getInstance().deleteAllBlobs(FakeSecurityContext.get(userId), userId, Token.get(Token.Service.INTERNAL, userId));
+                JavaShorts.getInstance().deleteAllShorts(userId, Token.get(Token.Service.INTERNAL, userId, user.getRole()));
+                JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(Token.Service.INTERNAL, userId, user.getRole()));
                 return userDelRes;
             });
         });

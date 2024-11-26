@@ -34,7 +34,7 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
 
     public CosmosDBShorts() {
         super();
-        blobs = new RestBlobsClient(/*tem que se mudar*/);
+        blobs = new RestBlobsClient(MainApplication.serverURI);
     }
 
     public static synchronized CosmosDBLayer getInstance() {
@@ -49,19 +49,19 @@ public class CosmosDBShorts extends CosmosDBLayer implements ShortsDatabse{
     }
 
 
-    private Result<Void> deleteShortWithoutRetry(Short shrt){
+    private Result<Void> deleteShortWithoutRetry(Short shrt, User deletedBy) {
         String shortId = shrt.getShortId();
         Result<ShortDAO> r = super.getOne(shortId, SHORTS_CONTAINER_NAME, ShortDAO.class);
         Result<Short> result = errorOrResult(r, shortDAO -> super.deleteOne(shortDAO, SHORTS_CONTAINER_NAME, shortDAO.get_etag()));
         if (!result.isOK()) return error(result.error());
         //var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
-        blobs.delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, shortId) );
+        blobs.delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, shortId, deletedBy.getRole()) );
         if (!result.isOK()) return error(result.error());
         return ok();
     }
     @Override
-    public Result<Void> deleteShort(Short shrt) {
-        return super.retry(()->deleteShortWithoutRetry(shrt), 3, 1000);
+    public Result<Void> deleteShort(Short shrt, User deletedBy) {
+        return super.retry(()->deleteShortWithoutRetry(shrt, deletedBy), 3, 1000);
     }
 
     @Override

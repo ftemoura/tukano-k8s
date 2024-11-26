@@ -129,8 +129,8 @@ public class Short {
 				+ timestamp + ", totalLikes=" + totalLikes + ", " + _ts +"]";
 	}
 	
-	public Short copyWithLikes_And_Token( long totLikes) {
-		var urlWithToken = String.format("%s?token=%s", blobUrl, Token.get(Token.Service.BLOBS, shortId));
+	public Short copyWithLikes_And_Token( long totLikes, Token.Role role) {
+		var urlWithToken = String.format("%s?token=%s", blobUrl, Token.get(Token.Service.BLOBS, shortId, role));
 		Short shr = new Short( shortId, ownerId, urlWithToken, timestamp, (int)totLikes, views);
 		shr.setLastModified(_ts);
 		return shr;

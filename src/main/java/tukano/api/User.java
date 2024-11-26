@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import org.hibernate.annotations.UpdateTimestamp;
+import tukano.impl.Token;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -24,6 +25,9 @@ public class User {
 	private String pwd;
 	private String email;	
 	private String displayName;
+
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private Token.Role role = Token.Role.ADMIN;
 
 
 	public User() {}
@@ -55,6 +59,12 @@ public class User {
 	}
 	public String getDisplayName() {
 		return displayName;
+	}
+	public Token.Role getRole() {
+		return role;
+	}
+	public void setRole(Token.Role role) {
+		this.role = role;
 	}
 	public void setDisplayName(String displayName) {
 		this.displayName = displayName;

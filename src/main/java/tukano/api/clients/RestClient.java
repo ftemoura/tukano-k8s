@@ -4,6 +4,7 @@ import static tukano.api.Result.*;
 import static tukano.api.Result.ErrorCode.INTERNAL_ERROR;
 import static tukano.api.Result.ErrorCode.TIMEOUT;
 
+import java.net.URLEncoder;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
@@ -47,7 +48,7 @@ public class RestClient {
         config.property(ClientProperties.CONNECT_TIMEOUT, CONNECT_TIMEOUT);
 
         this.client = ClientBuilder.newClient(config);
-        this.target = client.target( serverURI ).path( servicePath );
+        this.target = client.target(serverURI).path( servicePath );
     }
 
     protected <T> Result<T> reTry(Supplier<Result<T>> func) {
@@ -69,6 +70,7 @@ public class RestClient {
     protected Result<Void> toJavaResult(Response r) {
         try {
             var status = r.getStatusInfo().toEnum();
+            System.out.println("STATUS: "+status);
             if (status == Status.OK && r.hasEntity()) {
                 return ok(null);
             }

@@ -17,7 +17,7 @@ public class MainApplication extends Application
     private Set<Class<?>> resources = new HashSet<>();
 
     static String FUNCTIONS_BASE_URI = ConfigLoader.getInstance().getFunctionsURL();
-
+    static String LOCAL_BASE_URI = "http://127.0.0.1:%d/tukano/rest";
     public static final int PORT = 8080;
 
     public static String serverURI;
@@ -34,7 +34,7 @@ public class MainApplication extends Application
         resources.add(RestShortsResource.class);
         resources.add(RestUsersResource.class);
         resources.add(AuthenticationFilter.class);
-        serverURI = String.format(FUNCTIONS_BASE_URI, PORT);
+        serverURI = String.format(LOCAL_BASE_URI, PORT);
         Token.setSecret(ConfigLoader.getInstance().getTokenSecret());
     }
 

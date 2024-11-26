@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.IncorrectClaimException;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
@@ -77,7 +78,11 @@ public class Token {
 	}
 
 	public static boolean isEnoughRoleLevel(String tokenStr, Service service, Role role) {
-		return Role.valueOf(decodeToken(tokenStr, service).getClaim("role").toString()).getLevel() >= role.getLevel();
+		try {
+			return Role.valueOf(String.valueOf(decodeToken(tokenStr, service).getClaim("role")).replace("\"", "").trim()).getLevel() >= role.getLevel();
+		} catch (JWTVerificationException exception){
+			return false;
+		}
 	}
 
 	private static  DecodedJWT decodeToken(String tokenStr, Service service) {
@@ -92,10 +97,10 @@ public class Token {
 			decodedJWT = decodeToken(tokenStr, service);
 			if (!decodedJWT.getSubject().equals(id) || // wrong id
 					(decodedJWT.getIssuedAt().getTime() + MAX_TOKEN_AGE < Instant.now().toEpochMilli()) || // is over
-					(Role.valueOf(decodedJWT.getClaim("role").toString()).getLevel() < role.getLevel()))// wrong role
+					(Role.valueOf(String.valueOf(decodedJWT.getClaim("role")).replace("\"", "").trim()).getLevel() < role.getLevel()))// wrong role
 				return false;
 
-		} catch (JWTVerificationException exception){
+		} catch (JWTVerificationException exception ){
 			return false;
 			// Invalid signature/claims
 		}

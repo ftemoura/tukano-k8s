@@ -18,6 +18,7 @@ import tukano.impl.cache.RedisCacheBlobs;
 import tukano.impl.rest.MainApplication;
 import tukano.impl.storage.AzureBlobStorage;
 import tukano.impl.storage.BlobStorage;
+import tukano.impl.storage.FilesystemStorage;
 import utils.Hash;
 import utils.Hex;
 
@@ -37,11 +38,11 @@ public class JavaBlobs implements Blobs {
 	}
 	
 	private JavaBlobs() {
-		storage = new AzureBlobStorage();
+		storage = new FilesystemStorage();
 		cache = new RedisCacheBlobs();
 		//javaShorts = JavaShorts.getInstance();
 		baseURI = String.format("%s/%s/", MainApplication.serverURI, Blobs.NAME);
-		javaShorts = new RestShortsClient(baseURI);//TODO ESTOU A USER ESTE URL MAS DEPOIS TEM QUE SE MUDAR
+		javaShorts = new RestShortsClient(MainApplication.serverURI);//TODO ESTOU A USER ESTE URL MAS DEPOIS TEM QUE SE MUDAR
 	}
 	
 	@Override
@@ -103,8 +104,10 @@ public class JavaBlobs implements Blobs {
 	public Result<Void> delete(String blobId, String token) {
 		Log.info(() -> format("delete : blobId = %s, token=%s\n", blobId, token));
 	
-		if( ! validBlobIdAndRole( blobId, token, Token.Role.ADMIN) )
+		if( ! validBlobIdAndRole( blobId, token, Token.Role.ADMIN) ) {
+			System.out.println("FORBIDDEN");
 			return error(FORBIDDEN);
+		}
 
 		return storage.delete( toPath(blobId));
 	}
@@ -121,12 +124,14 @@ public class JavaBlobs implements Blobs {
 	
 	private boolean validBlobId(String blobId, String token) {		
 		System.out.println( blobId);
-		return Token.isValid(token, Token.Service.BLOBS, blobId);
+		return Token.isValid(token, Token.Service.BLOBS, blobId) ||
+				Token.isValid(token, Token.Service.INTERNAL, blobId);
 	}
 
 	private boolean validBlobIdAndRole(String blobId, String token, Token.Role role) {
 		System.out.println( blobId);
-		return Token.isValid(token, Token.Service.BLOBS, blobId, role);
+		return Token.isValid(token, Token.Service.BLOBS, blobId, role) ||
+				Token.isValid(token, Token.Service.INTERNAL, blobId, role);
 	}
 
 	private String toPath(String blobId) {

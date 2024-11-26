@@ -88,5 +88,5 @@ public interface RestShorts {
 	//TODO METER UM TOKEN
 	@Path("/{" + SHORT_ID + "}" + VIEWS)
 	@Consumes(MediaType.APPLICATION_JSON)
-	void updateShortViews(@PathParam(SHORT_ID) String shortId, int views);
+	void updateShortViews(@PathParam(SHORT_ID) String shortId, Long views);
 }

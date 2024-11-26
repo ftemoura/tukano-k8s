@@ -3,6 +3,7 @@ package tukano.impl.database;
 import jakarta.ws.rs.core.SecurityContext;
 import tukano.api.Result;
 import tukano.api.Short;
+import tukano.api.User;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
 
@@ -10,7 +11,7 @@ import java.util.List;
 
 public interface ShortsDatabse {
     Result<Short> createShort(Short shrt);
-    Result<Void> deleteShort(Short shrt);
+    Result<Void> deleteShort(Short shrt, User deletedBy);
     Long getLikesCount(String shortId);
     Result<Short> getShort(String shortId);
     Result<List<String>> getShorts(String userId );

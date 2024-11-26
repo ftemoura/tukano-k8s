@@ -63,7 +63,7 @@ public class JavaShorts implements Shorts {
 			var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
 			var shrt = new Short(shortId, userId, blobUrl);
 
-			return errorOrValue(dbImpl.createShort(shrt), s -> s.copyWithLikes_And_Token(0));
+			return errorOrValue(dbImpl.createShort(shrt), s -> s.copyWithLikes_And_Token(0, user.getRole()));
 		});
 
 		if(result.isOK()) {
@@ -88,7 +88,7 @@ public class JavaShorts implements Shorts {
 			return caheRes;
 		var likes = dbImpl.getLikesCount(shortId);
 		// TODO no copy passamos a role do user
-		Result<Short> bdRes = errorOrValue(dbImpl.getShort(shortId), shrt -> shrt.copyWithLikes_And_Token( likes));
+		Result<Short> bdRes = errorOrValue(dbImpl.getShort(shortId), shrt -> shrt.copyWithLikes_And_Token(likes, Token.Role.USER));
 		if(bdRes.isOK()) {
 			Executors.defaultThreadFactory().newThread(() -> {
 				Short shrt = bdRes.value();
@@ -105,7 +105,7 @@ public class JavaShorts implements Shorts {
 		
 		Result<Void> bdRes = errorOrResult( getShort(shortId), shrt -> {
 			return errorOrResult( okUser( shrt.getOwnerId(), sc), user -> {
-				return dbImpl.deleteShort(shrt);
+				return dbImpl.deleteShort(shrt, user);
 			});
 		});
 
@@ -240,7 +240,7 @@ public class JavaShorts implements Shorts {
 	public Result<Void> deleteAllShorts(String userId, String token) {
 		Log.info(() -> format("deleteAllShorts : userId = %s, token = %s\n", userId, token));
 
-		if( ! Token.isValid( token, Token.Service.INTERNAL, userId ) )
+		if( ! Token.isValid( token, Token.Service.INTERNAL, userId) )
 			return error(FORBIDDEN);
 
 		return dbImpl.deleteAllShorts(userId, token);
