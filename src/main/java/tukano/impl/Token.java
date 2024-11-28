@@ -24,8 +24,7 @@ public class Token {
 
 	public enum Service {
 		AUTH, // to be used for user authentication/authorization
-		BLOBS, // to be used for blobs
-		INTERNAL // to be used between internal services
+		BLOBS // to be used for blobs
 	}
 
 	// Hierarchical RBAC

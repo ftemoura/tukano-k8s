@@ -93,9 +93,7 @@ public class PostegreShorts implements ShortsDatabse{
 
     @Override
     public Result<Void> deleteAllShorts(String userId, String token) {
-
-        if(Token.isValid(token, Token.Service.BLOBS, userId, Token.Role.ADMIN))
-            blobs.deleteAllBlobs(userId, token);
+        blobs.deleteAllBlobs(userId, token);
         return DB.transaction( (hibernate) -> {
 
             //delete shorts

@@ -240,7 +240,7 @@ public class JavaShorts implements Shorts {
 	public Result<Void> deleteAllShorts(String userId, String token) {
 		Log.info(() -> format("deleteAllShorts : userId = %s, token = %s\n", userId, token));
 
-		if( ! Token.isValid( token, Token.Service.INTERNAL, userId) )
+		if( ! Token.isValid( token, Token.Service.BLOBS, userId) )
 			return error(FORBIDDEN);
 
 		return dbImpl.deleteAllShorts(userId, token);

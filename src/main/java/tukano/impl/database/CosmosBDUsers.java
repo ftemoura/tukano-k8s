@@ -61,8 +61,8 @@ public class CosmosBDUsers extends CosmosDBLayer implements UsersDatabase{
         return errorOrResult(r, userDAO -> {
             Result<User> res = super.deleteOne(userDAO, CONTAINER_NAME, userDAO.get_etag());
             if(res.isOK()) {
-                JavaShorts.getInstance().deleteAllShorts(userId,Token.get(Token.Service.INTERNAL, userId));
-                JavaBlobs.getInstance().deleteAllBlobs(userId,Token.get(Token.Service.INTERNAL, userId));
+                JavaShorts.getInstance().deleteAllShorts(userId,Token.get(Token.Service.BLOBS, userId));
+                JavaBlobs.getInstance().deleteAllBlobs(userId,Token.get(Token.Service.BLOBS, userId));
             }
             return res;
         });

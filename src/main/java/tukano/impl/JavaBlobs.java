@@ -124,14 +124,12 @@ public class JavaBlobs implements Blobs {
 	
 	private boolean validBlobId(String blobId, String token) {		
 		System.out.println( blobId);
-		return Token.isValid(token, Token.Service.BLOBS, blobId) ||
-				Token.isValid(token, Token.Service.INTERNAL, blobId);
+		return Token.isValid(token, Token.Service.BLOBS, blobId);
 	}
 
 	private boolean validBlobIdAndRole(String blobId, String token, Token.Role role) {
 		System.out.println( blobId);
-		return Token.isValid(token, Token.Service.BLOBS, blobId, role) ||
-				Token.isValid(token, Token.Service.INTERNAL, blobId, role);
+		return Token.isValid(token, Token.Service.BLOBS, blobId, role);
 	}
 
 	private String toPath(String blobId) {

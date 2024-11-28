@@ -222,28 +222,30 @@ public class RedisCache {
     }
 
     protected Result<Void> deleteKeysByPattern(String pattern) {
-        try (Jedis jedis = getCachePool().getResource()) {
-            String cursor = "0";
-            ScanParams scanParams = new ScanParams().match(pattern).count(20);
-            List<String> keysToDelete = new ArrayList<>();
+        return cache(__ ->{
+            try (Jedis jedis = getCachePool().getResource()) {
+                String cursor = "0";
+                ScanParams scanParams = new ScanParams().match(pattern).count(20);
+                List<String> keysToDelete = new ArrayList<>();
 
-            do {
-                ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
-                cursor = scanResult.getCursor();
-                keysToDelete.addAll(scanResult.getResult());
+                do {
+                    ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
+                    cursor = scanResult.getCursor();
+                    keysToDelete.addAll(scanResult.getResult());
 
-                if (!keysToDelete.isEmpty()) {
-                    jedis.del(keysToDelete.toArray(new String[0]));
-                    keysToDelete.clear();
-                }
+                    if (!keysToDelete.isEmpty()) {
+                        jedis.del(keysToDelete.toArray(new String[0]));
+                        keysToDelete.clear();
+                    }
 
-            } while (!cursor.equals("0"));
-            return Result.ok();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Result.error(INTERNAL_ERROR);
+                } while (!cursor.equals("0"));
+                return Result.ok();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return Result.error(INTERNAL_ERROR);
 
-        }
+            }
+        });
     }
 
     // We use the exception to cancel the transaction

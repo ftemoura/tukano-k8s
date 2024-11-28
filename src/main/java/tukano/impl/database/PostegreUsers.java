@@ -2,9 +2,11 @@ package tukano.impl.database;
 
 import tukano.api.Result;
 import tukano.api.User;
+import tukano.api.clients.RestBlobsClient;
 import tukano.impl.JavaBlobs;
 import tukano.impl.JavaShorts;
 import tukano.impl.Token;
+import tukano.impl.rest.MainApplication;
 import utils.DB;
 import utils.FakeSecurityContext;
 
@@ -18,6 +20,11 @@ import static tukano.api.Result.ErrorCode.NOT_FOUND;
 
 public class PostegreUsers implements UsersDatabase {
     private static Logger Log = Logger.getLogger(PostegreUsers.class.getName());
+    private RestBlobsClient blobs;
+
+    public PostegreUsers() {
+        this.blobs = new RestBlobsClient(MainApplication.serverURI);
+    }
     @Override
     public Result<User> createUser(User user) {
         return DB.insertOne(user);
@@ -44,8 +51,9 @@ public class PostegreUsers implements UsersDatabase {
             return errorOrResult( DB.getOne( userId, User.class), user -> {
                 Result<User> userDelRes = DB.deleteOne(user);
                 // Delete user shorts and related info asynchronously in a separate thread
-                JavaShorts.getInstance().deleteAllShorts(userId, Token.get(Token.Service.INTERNAL, userId, user.getRole()));
-                JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(Token.Service.INTERNAL, userId, user.getRole()));
+                JavaShorts.getInstance().deleteAllShorts(userId, Token.get(Token.Service.BLOBS, userId, user.getRole()));
+                //blobs.deleteAllBlobs(userId, Token.get(Token.Service.BLOBS, userId, user.getRole()));
+                //JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(Token.Service.BLOBS, userId, user.getRole()));
                 return userDelRes;
             });
         });
