@@ -27,7 +27,7 @@ public class User {
 	private String displayName;
 
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
-	private Token.Role role = Token.Role.ADMIN;
+	private Token.Role role;
 
 
 	public User() {}
@@ -37,6 +37,11 @@ public class User {
 		this.email = email;
 		this.userId = userId;
 		this.displayName = displayName;
+		if (userId.equals("admin")) {
+			this.role = Token.Role.ADMIN;
+		} else {
+			this.role = Token.Role.USER;
+		}
 	}
 
 	public String getUserId() {
