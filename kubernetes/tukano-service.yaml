@@ -1,0 +1,169 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tukano-services-configmap
+data:
+  SHORTS_INTERNAL_ENDPOINT: http://tukano-tomcat-service:8080/webapp/rest
+  USERS_INTERNAL_ENDPOINT: http://tukano-tomcat-service:8080/webapp/rest
+  BLOBS_INTERNAL_ENDPOINT: http://blobs-tomcat-service:8080/webapp/rest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: tukano-tomcat-deployment
+  name: tukano-tomcat-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tukano-tomcat-deployment
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: tukano-tomcat-deployment
+    spec:
+      containers:
+      - image: acrtukano6004560174.azurecr.io/tukano-tomcat
+        name: tukano-tomcat-container
+        envFrom:
+        - secretRef:
+            name: tukano-secrets
+        - configMapRef:
+            name: tukano-services-configmap
+        - configMapRef:    
+            name: tukano-config
+        env:
+        - name: APPLICATION_CLASS
+          value: tukano.impl.rest.application.TukanoApplication
+        #imagePullPolicy: Never
+        ports:
+          - containerPort: 8080
+status: {}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: blobs-volume
+  labels:
+    type: local
+    app: blobs-tomcat-deployment
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: /data/blobs
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: blobs-volume-claim
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: blobs-tomcat-deployment
+  name: blobs-tomcat-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blobs-tomcat-deployment
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: blobs-tomcat-deployment
+    spec:
+      containers:
+      - image: acrtukano6004560174.azurecr.io/tukano-tomcat
+        name: blobs-tomcat-container
+        envFrom:
+        - secretRef:
+            name: tukano-secrets
+        - configMapRef:
+            name: tukano-services-configmap
+        - configMapRef:    
+            name: tukano-config
+        env:
+        - name: APPLICATION_CLASS
+          value: tukano.impl.rest.application.BlobsApplication
+        #imagePullPolicy: Never
+        ports:
+          - containerPort: 8080
+        volumeMounts:
+            - mountPath: /data/blobs
+              name: blobsdata
+      volumes:
+        - name: blobsdata
+          persistentVolumeClaim:
+            claimName: blobs-volume-claim
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tukano-tomcat-service
+spec:
+  selector:
+    app: tukano-tomcat-deployment 
+  ports:
+  - name: tukano-tomcat-service-8080
+    protocol: TCP
+    port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blobs-tomcat-service
+spec:
+  selector:
+    app: blobs-tomcat-deployment 
+  ports:
+  - name: blobs-tomcat-service-8080
+    protocol: TCP
+    port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tukano-ingress
+  annotations:
+    # https://learn.microsoft.com/en-us/azure/aks/app-routing-nginx-configuration?tabs=azurecli#url-rewriting
+    nginx.ingress.kubernetes.io/rewrite-target: /webapp/$1$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 100mb
+spec:
+  ingressClassName: webapprouting.kubernetes.azure.com
+  rules:
+      - http: 
+          paths:
+          - path: /(rest/blobs)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: blobs-tomcat-service
+                port:
+                  number: 8080
+          - path: /()(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: tukano-tomcat-service
+                port:
+                  number: 8080
+
