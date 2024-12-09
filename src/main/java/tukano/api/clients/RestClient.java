@@ -86,6 +86,7 @@ public class RestClient {
     protected <T> Result<T> toJavaResult(Response r, Class<T> entityType) {
         try {
             var status = r.getStatusInfo().toEnum();
+            System.out.println("STATUS: "+status);
             if (status == Status.OK && r.hasEntity())
                 return ok(r.readEntity(entityType));
             else

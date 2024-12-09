@@ -247,6 +247,7 @@ public class JavaShorts implements Shorts {
 
 	@Override
 	public Result<Void> updateShortViews(String shortId, Long views) {
+		cache.deleteShort(shortId);
 		return dbImpl.updateShortViews(shortId, views);
 	}
 
