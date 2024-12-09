@@ -5,7 +5,7 @@
 	<groupId>scc2425</groupId>
 	<artifactId>tukano</artifactId>
 	<version>1</version>
-	<packaging>$AZURE_JAVA_PACKAGING</packaging>
+	<packaging>war</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<authors>60045-60174</authors>
@@ -27,11 +27,23 @@
 					<update>true</update>
 					<path>/tukano</path>
 				</configuration>
-			</plugin><!-- TESTING ONLY-->
+			</plugin><!-- TESTING ONLY a -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-war-plugin</artifactId>
 				<version>3.3.2</version>
+				<configuration>
+					<webResources>
+						<resource>
+							<filtering>true</filtering>
+							<directory>src/main/webapp</directory>
+							<includes>
+								<include>**/web.xml</include> <!-- for setting the Application class with env var-->
+							</includes>
+						</resource>
+					</webResources>
+					<skip>${docker.build.skip}</skip> <!-- for skipping the build process in the docker file-->
+				</configuration>
 			</plugin>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>

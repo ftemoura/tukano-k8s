@@ -19,6 +19,5 @@ buildNumber.properties
 #node_modules
 node_modules/
 # config file
-/src/main/resources/application.secrets
-Azure.Functions.Cli.min.win-x64.4.0.6543/
 deploy/*.secrets
+kubernetes/.secrets

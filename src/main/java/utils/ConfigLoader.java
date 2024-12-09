@@ -6,7 +6,6 @@ import java.util.Properties;
 public class ConfigLoader {
     private static ConfigLoader instance;
     private Properties properties = new Properties();
-    private Properties secrets = new Properties();
 
     private ConfigLoader() {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("application.properties")) {
@@ -18,18 +17,9 @@ public class ConfigLoader {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("application.secrets")) {
-            if (inputStream == null) {
-                System.out.println("Sorry, unable to find se.properties");
-                return;
-            }
-            secrets.load(inputStream);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
-    // Method to get the singleton instance
+    // Method to fakeSecurityContext the singleton instance
     public static synchronized ConfigLoader getInstance() {
         if (instance == null) {
             instance = new ConfigLoader();
@@ -38,82 +28,62 @@ public class ConfigLoader {
     }
 
     public String getUsedDbType() {
-        return secrets.getProperty("USED_DB_TYPE");
-    }
-
-    public String getFunctionsURL() {
-        return secrets.getProperty("AZURE_FUNCTIONS_URL");
+        return System.getenv("USED_DB_TYPE");
     }
 
     public String getTokenSecret() {
-        return secrets.getProperty("TOKEN_SECRET");
+        return System.getenv("TOKEN_SECRET");
     }
 
     public String getRegion() {
-        return secrets.getProperty("AZURE_REGION");
-    }
-
-    public String getBlobConnectionString() {
-        return secrets.getProperty("AZURE_BLOB_STORE_CONNECTION");
+        return System.getenv("AZURE_REGION");
     }
 
     public String getRedisHostname() {
-        return secrets.getProperty("REDIS_URL");
+        return System.getenv("REDIS_URL");
     }
 
     public String getRedisKey() {
-        return secrets.getProperty("REDIS_KEY");
+        return System.getenv("REDIS_KEY");
     }
 
     public int getRedisPort() {
-        return Integer.parseInt(secrets.getProperty("REDIS_PORT"));
+        return Integer.parseInt(System.getenv("REDIS_PORT"));
     }
 
-    public String getCosmosDBKey() {
-        return secrets.getProperty("AZURE_COSMOSDB_KEY");
-    }
+    public String getHibernateUsername() {return System.getenv("POSTGRES_USER");}
 
-    public String getCosmosDBName() {
-        return secrets.getProperty("AZURE_COSMOSDB_NAME");
-    }
-
-    public String getCosmosConnectionUrl() {
-        return secrets.getProperty("AZURE_COSMOSDB_ENDPOINT");
-    }
-
-    public String getHibernateUsername() {return secrets.getProperty("HIBERNATE_USERNAME");}
-
-    public String getHibernatePassword() {return secrets.getProperty("HIBERNATE_PWD");}
+    public String getHibernatePassword() {return System.getenv("POSTGRES_PASSWORD");}
 
     public String getHibernateConnectionUrl() {
-        return secrets.getProperty("HIBERNATE_JDBC_URL");
+        return System.getenv("POSTGRES_JDBC_URL");
+    }
+
+    public boolean isCacheEnabled() {
+        return Boolean.parseBoolean(System.getenv("CACHE_ENABLED"));
+    }
+
+    public String getApplicationClass() {
+        return System.getenv("APPLICATION_CLASS");
+    }
+
+    public String getShortsInternalEndpoint() {
+        return System.getenv("SHORTS_INTERNAL_ENDPOINT");
+    }
+
+    public String getUsersInternalEndpoint() {
+        return System.getenv("USERS_INTERNAL_ENDPOINT");
+    }
+
+    public String getBlobsInternalEndpoint() {
+        return System.getenv("BLOBS_INTERNAL_ENDPOINT");
+    }
+
+    public String getExternalEndpoint() {
+        return System.getenv("EXTERNAL_ENDPOINT");
     }
 
     public String getHibernateConfigPath() {
         return properties.getProperty("hibernate.config");
-    }
-
-    public boolean isCacheEnabled() {
-        return Boolean.parseBoolean(properties.getProperty("cacheEnabled"));
-    }
-
-    public String getblobShortsName() {
-        return properties.getProperty("azure.blobShortsName");
-    }
-
-    public String getCosmosDBUsersContainer() {
-        return properties.getProperty("azure.cosmosDBUsersContainer");
-    }
-
-    public String getCosmosDBShortsContainer() {
-        return properties.getProperty("azure.cosmosDBShortsContainer");
-    }
-
-    public String getCosmosDBLikesContainer() {
-        return properties.getProperty("azure.cosmosDBLikesContainer");
-    }
-
-    public String getCosmosDBFollowsContainer() {
-        return properties.getProperty("azure.cosmosDBFollowsContainer");
     }
 }
