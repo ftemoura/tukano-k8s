@@ -1,14 +1,14 @@
 package tukano.impl.database;
 
+import tukano.api.Blobs;
 import tukano.api.Result;
+import tukano.api.Shorts;
 import tukano.api.User;
 import tukano.api.clients.RestBlobsClient;
-import tukano.impl.JavaBlobs;
 import tukano.impl.JavaShorts;
 import tukano.impl.Token;
-import tukano.impl.rest.MainApplication;
 import utils.DB;
-import utils.FakeSecurityContext;
+import utils.Auth;
 
 import java.util.List;
 import java.util.logging.Logger;
@@ -20,10 +20,12 @@ import static tukano.api.Result.ErrorCode.NOT_FOUND;
 
 public class PostegreUsers implements UsersDatabase {
     private static Logger Log = Logger.getLogger(PostegreUsers.class.getName());
-    private RestBlobsClient blobs;
+    private Blobs blobs;
+    private Shorts shorts;
 
     public PostegreUsers() {
-        this.blobs = new RestBlobsClient(MainApplication.serverURI);
+        this.blobs = new RestBlobsClient();
+        this.shorts = JavaShorts.getInstance();
     }
     @Override
     public Result<User> createUser(User user) {
@@ -50,10 +52,10 @@ public class PostegreUsers implements UsersDatabase {
         return DB.transaction( hibernate -> {
             return errorOrResult( DB.getOne( userId, User.class), user -> {
                 Result<User> userDelRes = DB.deleteOne(user);
-                // Delete user shorts and related info asynchronously in a separate thread
-                JavaShorts.getInstance().deleteAllShorts(userId, Token.get(Token.Service.BLOBS, userId, user.getRole()));
-                //blobs.deleteAllBlobs(userId, Token.get(Token.Service.BLOBS, userId, user.getRole()));
-                //JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(Token.Service.BLOBS, userId, user.getRole()));
+                shorts.deleteAllShorts(
+                        Auth.fakeSecurityContext(Token.get(Token.Service.AUTH, user.getUserId(), user.getRole())),
+                        userId);
+                blobs.deleteAllBlobs(Auth.fakeSecurityContext(Token.get(Token.Service.AUTH, userId, user.getRole())), userId);
                 return userDelRes;
             });
         });
@@ -61,7 +63,7 @@ public class PostegreUsers implements UsersDatabase {
 
     @Override
     public Result<List<User>> searchUsers(String pattern) {
-        var query = format("SELECT * FROM \"User\" u WHERE UPPER(\"id\") LIKE '%%%s%%'", pattern.toUpperCase());
+        var query = format("SELECT * FROM \"User\" WHERE UPPER(\"userId\") LIKE '%%%s%%'", pattern.toUpperCase());
         Log.info("Query: " + query);
         return ok(DB.sql(query, User.class)
                 .stream()

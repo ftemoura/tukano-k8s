@@ -76,6 +76,14 @@ public class Token {
 		return JWT.decode(tokenStr).getSubject();
 	}
 
+	public static String getIssuer(String tokenStr) {
+		return JWT.decode(tokenStr).getIssuer();
+	}
+
+	public static String getClaim(String tokenStr, String claim) {
+		return String.valueOf(JWT.decode(tokenStr).getClaim(claim));
+	}
+
 	public static boolean isEnoughRoleLevel(String tokenStr, Service service, Role role) {
 		try {
 			return Role.valueOf(String.valueOf(decodeToken(tokenStr, service).getClaim("role")).replace("\"", "").trim()).getLevel() >= role.getLevel();

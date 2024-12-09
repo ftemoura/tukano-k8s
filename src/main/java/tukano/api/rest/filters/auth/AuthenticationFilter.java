@@ -8,7 +8,6 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.ext.Provider;
 import tukano.impl.Token;
-import utils.FakeSecurityContext;
 
 import java.security.Principal;
 
@@ -35,7 +34,7 @@ public class AuthenticationFilter implements ContainerRequestFilter
 
                 @Override
                 public Principal getUserPrincipal() {
-                    return () -> Token.getSubject(token);
+                    return () -> token;
                 }
 
                 @Override

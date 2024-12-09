@@ -1,21 +1,22 @@
 package utils;
 
 import jakarta.ws.rs.core.SecurityContext;
+import tukano.impl.Token;
 
 import java.security.Principal;
 
-public class FakeSecurityContext {
-    public static SecurityContext get(String userId) {
+public class Auth {
+    public static SecurityContext fakeSecurityContext(String token) {
         return new SecurityContext() {
 
             @Override
             public Principal getUserPrincipal() {
-                return () -> userId;
+                return () -> token;
             }
 
             @Override
             public boolean isUserInRole(String role) {
-                return true;
+                return Token.isEnoughRoleLevel(token, Token.Service.AUTH, Token.Role.valueOf(role));
             }
 
             @Override

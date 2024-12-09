@@ -20,7 +20,7 @@ public interface ShortsDatabse {
     Result<Likes> like(Likes l, boolean isLiked);
     Result<List<String>> likes(String shortId);
     Result<List<String>> getFeed(String userId);
-    Result<Void> deleteAllShorts(String userId, String token);
+    Result<Void> deleteAllShorts(String userId);
     Result<Void> updateShortViews(String shortId, Long views);
 
 }

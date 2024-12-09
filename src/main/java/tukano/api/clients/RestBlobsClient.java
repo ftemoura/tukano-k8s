@@ -7,82 +7,52 @@ import tukano.api.Blobs;
 import tukano.api.Result;
 import tukano.api.rest.RestBlobs;
 import tukano.impl.Token;
-
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import utils.ConfigLoader;
 
 public class RestBlobsClient extends RestClient implements Blobs {
+
+    public RestBlobsClient() {
+        super(ConfigLoader.getInstance().getBlobsInternalEndpoint(), RestBlobs.PATH);
+    }
 
     public RestBlobsClient(String serverURI) {
         super(serverURI, RestBlobs.PATH);
     }
-//    private static String extractUserId(String url) {
-//        Pattern pattern = Pattern.compile("/api/blobs/([a-zA-Z0-9]+)\\+");
-//        Matcher matcher = pattern.matcher(url);
-//
-//        if (matcher.find()) {
-//            return matcher.group(1);
-//        }
-//
-//        return null;
-//    }
-    private Result<Void> _upload(String blobURL, byte[] bytes, String token) {
-        return super.toJavaResult(
-                target.path(blobURL)
-                        .queryParam(RestBlobs.TOKEN, token)
-                        .request()
-                        //.cookie("AUTH", Token.get(Token.Service.BLOBS, extractUserId(blobURL) , Token.Role.ADMIN)) //TODO como é que vamos sacar o id sem splits?
-                        .post( Entity.entity(bytes, MediaType.APPLICATION_OCTET_STREAM_TYPE)));
-    }
 
-    private Result<byte[]> _download(String blobURL, String token) {
+    private Result<Void> _delete(SecurityContext sc, String blobId) {
         return super.toJavaResult(
-                target.path(blobURL)
-                        .queryParam(RestBlobs.TOKEN, token)
+                target.path(blobId)
                         .request()
-                        //.cookie("AUTH", Token.get(Token.Service.BLOBS, extractUserId(blobURL), Token.Role.ADMIN)) //TODO como é que vamos sacar o id sem splits?
-                        .accept(MediaType.APPLICATION_OCTET_STREAM_TYPE)
-                        .get(), byte[].class);
-    }
-
-    private Result<Void> _delete(String blobURL, String token) {
-        return super.toJavaResult(
-                target.path(blobURL)
-                        .queryParam(RestBlobs.TOKEN, token)
-                        .request()
-                        //.cookie("AUTH", Token.get(Token.Service.BLOBS, extractUserId(blobURL), Token.Role.ADMIN)) //TODO como é que vamos sacar o id sem splits?
+                        .cookie("AUTH", sc.getUserPrincipal().getName())
                         .delete());
     }
 
-    private Result<Void> _deleteAllBlobs(String userId, String token) {
+    private Result<Void> _deleteAllBlobs(SecurityContext sc, String userId) {
         return super.toJavaResult(
                 target.path(userId)
                         .path(RestBlobs.BLOBS)
-                        .queryParam( RestBlobs.TOKEN, token )
                         .request()
-                        //.cookie("AUTH", Token.get(Token.Service.BLOBS, userId, Token.Role.ADMIN))
+                        .cookie("AUTH", sc.getUserPrincipal().getName())
                         .delete());
     }
 
     @Override
     public Result<Void> upload(String blobId, byte[] bytes, String token) {
-        return super.reTry( () -> _upload(blobId, bytes, token));
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public Result<byte[]> download(String blobId, String token) {
-        return super.reTry( () -> _download(blobId, token));
+    public Result<byte[]> download(String blobId) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public Result<Void> delete(String blobId, String token) {
-        return super.reTry( () -> _delete(blobId, token));
+    public Result<Void> delete(SecurityContext sc, String blobId) {
+        return super.reTry( () -> _delete(sc, blobId));
     }
 
     @Override
-    public Result<Void> deleteAllBlobs(String userId, String password) {
-        return super.reTry( () -> _deleteAllBlobs(userId, password));
+    public Result<Void> deleteAllBlobs(SecurityContext sc, String userId) {
+        return super.reTry( () -> _deleteAllBlobs(sc, userId));
     }
 }

@@ -41,11 +41,13 @@ public interface RestShorts {
 
 	@GET
 	@Path("/{" + SHORT_ID + "}" )
+	@AuthRequired
 	@Produces(MediaType.APPLICATION_JSON)
 	Short getShort(@PathParam(SHORT_ID) String shortId);
 
 	@GET
 	@Path("/{" + USER_ID + "}" + SHORTS )
+	@AuthRequired
 	@Produces(MediaType.APPLICATION_JSON)
 	List<String> getShorts(@PathParam(USER_ID) String userId);
 
@@ -82,7 +84,7 @@ public interface RestShorts {
 	@DELETE
 	@AuthRequired
 	@Path("/{" + USER_ID + "}" + SHORTS)
-	void deleteAllShorts(@PathParam(USER_ID) String userId, @QueryParam(TOKEN) String token);
+	void deleteAllShorts(@Context SecurityContext sc, @PathParam(USER_ID) String userId);
 
 	@PUT
 	//TODO METER UM TOKEN

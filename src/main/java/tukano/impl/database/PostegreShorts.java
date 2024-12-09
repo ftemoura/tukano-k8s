@@ -1,16 +1,14 @@
 package tukano.impl.database;
 
-import tukano.api.Blobs;
 import tukano.api.Result;
 import tukano.api.Short;
 import tukano.api.User;
 import tukano.api.clients.RestBlobsClient;
-import tukano.impl.JavaBlobs;
 import tukano.impl.Token;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
-import tukano.impl.rest.MainApplication;
 import utils.DB;
+import utils.Auth;
 
 import java.util.List;
 
@@ -19,9 +17,9 @@ import static tukano.api.Result.*;
 import static utils.DB.getOne;
 
 public class PostegreShorts implements ShortsDatabse{
-    private static RestBlobsClient blobs;
+    private RestBlobsClient blobs;
     public PostegreShorts() {
-        blobs = new RestBlobsClient(MainApplication.serverURI);
+        blobs = new RestBlobsClient();
     }
     @Override
     public Result<Short> createShort(Short shrt) {
@@ -35,8 +33,9 @@ public class PostegreShorts implements ShortsDatabse{
             hibernate.remove( shrt);
             var query = format("DELETE FROM \"Likes\" l WHERE \"shortId\" = '%s'", shortId);
             hibernate.createNativeQuery( query, Likes.class).executeUpdate();
-            //var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
-            blobs.delete(shrt.getShortId(), Token.get(Token.Service.BLOBS, shortId, deletedBy.getRole()) );
+            blobs.delete(
+                    Auth.fakeSecurityContext(Token.get(Token.Service.AUTH, deletedBy.getUserId(), deletedBy.getRole())),
+                    shrt.getShortId());
         });
     }
 
@@ -92,22 +91,17 @@ public class PostegreShorts implements ShortsDatabse{
     }
 
     @Override
-    public Result<Void> deleteAllShorts(String userId, String token) {
-        blobs.deleteAllBlobs(userId, token);
+    public Result<Void> deleteAllShorts(String userId) {
         return DB.transaction( (hibernate) -> {
-
             //delete shorts
             var query1 = format("DELETE FROM \"Short\" s WHERE \"ownerId\" = '%s'", userId);
             hibernate.createNativeQuery(query1, Short.class).executeUpdate();
-
             //delete follows
             var query2 = format("DELETE FROM \"Following\" f WHERE \"follower\" = '%s' OR \"followee\" = '%s'", userId, userId);
             hibernate.createNativeQuery(query2, Following.class).executeUpdate();
-
             //delete likes
             var query3 = format("DELETE FROM \"Likes\" l WHERE \"ownerId\" = '%s' OR \"userId\" = '%s'", userId, userId);
             hibernate.createNativeQuery(query3, Likes.class).executeUpdate();
-
         });
     }
 

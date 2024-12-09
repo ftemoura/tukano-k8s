@@ -3,27 +3,31 @@ package tukano.api.clients;
 import java.util.List;
 
 import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.SecurityContext;
 import tukano.api.Result;
 import tukano.api.Short;
 import tukano.api.Shorts;
 import tukano.api.rest.RestShorts;
-import tukano.impl.Token;
+import utils.ConfigLoader;
 
 public class RestShortsClient extends RestClient implements Shorts{
+
+    public RestShortsClient() {
+        super(ConfigLoader.getInstance().getShortsInternalEndpoint(), RestShorts.PATH);
+    }
 
     public RestShortsClient(String serverURI) {
         super(serverURI, RestShorts.PATH);
     }
+
 
 //    public Result<Short> _createShort(String userId) {
 //        return super.toJavaResult(
 //                target
 //                        .path(userId)
 //                        .request()
-//                        .cookie("AUTH", Token.get(Token.Service.AUTH, userId, Token.Role.ADMIN))
+//                        .cookie("AUTH", Token.fakeSecurityContext(Token.Service.AUTH, userId, Token.Role.ADMIN))
 //                        .accept(MediaType.APPLICATION_JSON)
 //                        .post( Entity.json(null)), Short.class);
 //    }
@@ -33,7 +37,7 @@ public class RestShortsClient extends RestClient implements Shorts{
 //                target
 //                        .path(shortId)
 //                        .request()
-//                        .cookie("AUTH", Token.get(Token.Service.AUTH, shortId, Token.Role.ADMIN))
+//                        .cookie("AUTH", Token.fakeSecurityContext(Token.Service.AUTH, shortId, Token.Role.ADMIN))
 //                        .delete());
 //    }
 
@@ -52,7 +56,7 @@ public class RestShortsClient extends RestClient implements Shorts{
 //                        .path(RestShorts.SHORTS)
 //                        .request()
 //                        .accept( MediaType.APPLICATION_JSON)
-//                        .get(), new GenericType<List<String>>() {});
+//                        .fakeSecurityContext(), new GenericType<List<String>>() {});
 //    }
 //
 //    public Result<Void> _follow(String userId1, String userId2, boolean isFollowing) {
@@ -62,7 +66,7 @@ public class RestShortsClient extends RestClient implements Shorts{
 //                        .path(userId2)
 //                        .path(RestShorts.FOLLOWERS)
 //                        .request()
-//                        .cookie("AUTH", Token.get(Token.Service.AUTH, userId1, Token.Role.ADMIN))
+//                        .cookie("AUTH", Token.fakeSecurityContext(Token.Service.AUTH, userId1, Token.Role.ADMIN))
 //                        .post( Entity.entity(isFollowing, MediaType.APPLICATION_JSON)));
 //    }
 //
@@ -72,9 +76,9 @@ public class RestShortsClient extends RestClient implements Shorts{
 //                        .path(userId)
 //                        .path(RestShorts.FOLLOWERS)
 //                        .request()
-//                        .cookie("AUTH", Token.get(Token.Service.AUTH, userId, Token.Role.ADMIN))
+//                        .cookie("AUTH", Token.fakeSecurityContext(Token.Service.AUTH, userId, Token.Role.ADMIN))
 //                        .accept( MediaType.APPLICATION_JSON)
-//                        .get(), new GenericType<List<String>>() {});
+//                        .fakeSecurityContext(), new GenericType<List<String>>() {});
 //    }
 //
 //    public Result<Void> _like(String shortId, String userId, boolean isLiked) {
@@ -84,7 +88,7 @@ public class RestShortsClient extends RestClient implements Shorts{
 //                        .path(userId)
 //                        .path(RestShorts.LIKES)
 //                        .request()
-//                        .cookie("AUTH", Token.get(Token.Service.AUTH, userId, Token.Role.ADMIN))
+//                        .cookie("AUTH", Token.fakeSecurityContext(Token.Service.AUTH, userId, Token.Role.ADMIN))
 //                        .post( Entity.entity(isLiked, MediaType.APPLICATION_JSON)));
 //    }
 //
@@ -94,9 +98,9 @@ public class RestShortsClient extends RestClient implements Shorts{
 //                        .path(shortId)
 //                        .path(RestShorts.LIKES)
 //                        .request()
-//                        .cookie("AUTH", Token.get(Token.Service.AUTH, userId, Token.Role.ADMIN))
+//                        .cookie("AUTH", Token.fakeSecurityContext(Token.Service.AUTH, userId, Token.Role.ADMIN))
 //                        .accept( MediaType.APPLICATION_JSON)
-//                        .get(), new GenericType<List<String>>() {});
+//                        .fakeSecurityContext(), new GenericType<List<String>>() {});
 //    }
 //
 //    public Result<List<String>> _getFeed(String userId) {
@@ -105,9 +109,9 @@ public class RestShortsClient extends RestClient implements Shorts{
 //                        .path(userId)
 //                        .path(RestShorts.FEED)
 //                        .request()
-//                        .cookie("AUTH", Token.get(Token.Service.AUTH, userId, Token.Role.ADMIN))
+//                        .cookie("AUTH", Token.fakeSecurityContext(Token.Service.AUTH, userId, Token.Role.ADMIN))
 //                        .accept( MediaType.APPLICATION_JSON)
-//                        .get(), new GenericType<List<String>>() {});
+//                        .fakeSecurityContext(), new GenericType<List<String>>() {});
 //    }
 //
 //    public Result<Void> _deleteAllShorts(String userId, String token) {
@@ -117,7 +121,7 @@ public class RestShortsClient extends RestClient implements Shorts{
 //                        .path(RestShorts.SHORTS)
 //                        .queryParam(RestShorts.TOKEN, token )
 //                        .request()
-//                        .cookie("AUTH", Token.get(Token.Service.AUTH, userId, Token.Role.ADMIN))
+//                        .cookie("AUTH", Token.fakeSecurityContext(Token.Service.AUTH, userId, Token.Role.ADMIN))
 //                        .delete());
 //    }
 //
@@ -126,7 +130,7 @@ public class RestShortsClient extends RestClient implements Shorts{
 //                target
 //                        .path(blobId)
 //                        .request()
-//                        .get());
+//                        .fakeSecurityContext());
 //    }
 
     public Result<Void> _updateShortViews(String shortId, Long views) {
@@ -183,7 +187,7 @@ public class RestShortsClient extends RestClient implements Shorts{
     }
 
     @Override
-    public Result<Void> deleteAllShorts(String userId, String token) {
+    public Result<Void> deleteAllShorts(SecurityContext sc, String userId) {
         throw new UnsupportedOperationException();
     }
 

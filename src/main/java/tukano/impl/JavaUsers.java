@@ -41,7 +41,7 @@ public class JavaUsers implements Users {
 		this.cache = new RedisCacheUsers();
 
 		if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.COSMOS.toString()))
-			this.dbImpl = new CosmosBDUsers();
+			throw new RuntimeException("Not implemented");
 		else if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.POSTGRESQL.toString()))
 			this.dbImpl = new PostegreUsers();
 		else Log.info(() -> format("Invalid DB Type"));
@@ -53,7 +53,7 @@ public class JavaUsers implements Users {
 
 		if( badUserInfo(user) )
 				return error(BAD_REQUEST);
-
+		setRole(user);
 		Result<User> bdRes = dbImpl.createUser(user);
 		if(bdRes.isOK()) {
 			Executors.defaultThreadFactory().newThread(() -> {
@@ -72,7 +72,7 @@ public class JavaUsers implements Users {
 			return Result.error(res.error());
 		} else {
 			NewCookie c = new NewCookie.Builder(Token.Service.AUTH.toString())
-					.value(Token.get(Token.Service.AUTH, userId, Token.Role.USER))
+					.value(Token.get(Token.Service.AUTH, userId, res.value().getRole()))
 					.expiry(Date.from(Instant.now().plusMillis(Token.MAX_TOKEN_AGE)))
 					.path("/")
 					.build();
@@ -88,7 +88,7 @@ public class JavaUsers implements Users {
 			return error(BAD_REQUEST);
 
 		// authorization: userId requested matches the requester token
-		if( !userId.equals(sc.getUserPrincipal().getName()))
+		if( !userId.equals(Token.getSubject(sc.getUserPrincipal().getName())))
 			return error(FORBIDDEN);
 
 		Result<User> cacheRes = cache.getUser(userId);
@@ -109,9 +109,9 @@ public class JavaUsers implements Users {
 
 		if (badUpdateUserInfo(userId, other))
 			return error(BAD_REQUEST);
-
+		setRole(other);
 		// authorization: userId requested matches the requester token
-		if( !userId.equals(sc.getUserPrincipal().getName()))
+		if( !userId.equals(Token.getSubject(sc.getUserPrincipal().getName())))
 			return error(FORBIDDEN);
 
 		Result<User> bdRes = dbImpl.updateUser(userId, other);
@@ -131,7 +131,7 @@ public class JavaUsers implements Users {
 			return error(BAD_REQUEST);
 
 		// authorization: userId requested matches the requester token
-		if( !userId.equals(sc.getUserPrincipal().getName()))
+		if( !userId.equals(Token.getSubject(sc.getUserPrincipal().getName())))
 			return error(FORBIDDEN);
 
 		Result<User> dbRes = dbImpl.deleteUser(userId);
@@ -144,13 +144,20 @@ public class JavaUsers implements Users {
 		return dbRes;
 	}
 
-	@Override//TODO compensa cache?
+	@Override
 	public Result<List<User>> searchUsers(String pattern) {
 		Log.info( () -> format("searchUsers : patterns = %s\n", pattern));
 
 		return dbImpl.searchUsers(pattern);
 	}
 
+	private void setRole(User user) {
+		if (user.getUserId().equalsIgnoreCase("admin")) {
+			user.setRole(Token.Role.ADMIN);
+		} else {
+			user.setRole(Token.Role.USER);
+		}
+	}
 
 	private boolean badUserInfo( User user) {
 		return (user.getUserId() == null || user.pwd() == null || user.displayName() == null || user.email() == null);

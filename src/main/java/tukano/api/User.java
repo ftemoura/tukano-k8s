@@ -26,22 +26,18 @@ public class User {
 	private String email;	
 	private String displayName;
 
-	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	//@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	private Token.Role role;
 
 
 	public User() {}
 	
-	public User(String userId, String pwd, String email, String displayName) {
+	public User(String userId, String pwd, String email, String displayName, Token.Role role) {
 		this.pwd = pwd;
 		this.email = email;
 		this.userId = userId;
 		this.displayName = displayName;
-		if (userId.equals("admin")) {
-			this.role = Token.Role.ADMIN;
-		} else {
-			this.role = Token.Role.USER;
-		}
+		this.role = role;
 	}
 
 	public String getUserId() {
@@ -112,13 +108,14 @@ public class User {
 		return "User [ts="+_ts +", userId=" + userId + ", pwd=" + pwd + ", email=" + email + ", displayName=" + displayName + "]";
 	}
 	public User copyWithoutPassword() {
-		return new User(userId, "", email, displayName);
+		return new User(userId, "", email, displayName, role);
 	}
 
 	public User updateFrom(User other) {
 		return new User( userId,
 				other.pwd() != null ? other.pwd() : pwd,
 				other.email() != null ? other.email() : email,
-				other.displayName() != null ? other.displayName() : displayName);
+				other.displayName() != null ? other.displayName() : displayName,
+				other.getRole() != null ? other.getRole() : role);
 	}
 }

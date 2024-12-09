@@ -1,5 +1,6 @@
 package tukano.api;
 
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
 
 import java.util.function.Consumer;
@@ -32,7 +33,7 @@ public interface Blobs {
 	 * @return (OK, bytes), if the blob exists;
 	 * 			 NOT_FOUND, if no blob matches the provided blobId
 	 */
-	Result<byte[]> download(String blobId, String token);
+	Result<byte[]> download(String blobId);
 
 	/**
 	 * Downloads a short video blob resource as a result suitable for streaming
@@ -45,8 +46,8 @@ public interface Blobs {
 	 * @return (OK,), if the blob exists;
 	 *		   NOT_FOUND, if no blob matches the provided blobId
 	 */
-	default Result<Void> downloadToSink(String blobId, Consumer<byte[]> sink, String token) {
-		var res = download(blobId, token);
+	default Result<Void> downloadToSink(String blobId, Consumer<byte[]> sink) {
+		var res = download(blobId);
 		if (!res.isOK())
 			return Result.error(res.error());
 
@@ -54,7 +55,7 @@ public interface Blobs {
 		return Result.ok();
 	}
 	
-	Result<Void> delete(String blobId, String token );
+	Result<Void> delete(SecurityContext sc, String blobId);
 	
-	Result<Void> deleteAllBlobs(String userId, String token );
+	Result<Void> deleteAllBlobs(SecurityContext sc, String userId);
 }

@@ -8,7 +8,6 @@ import static tukano.api.Result.errorOrVoid;
 import static tukano.api.Result.ok;
 import static tukano.api.Result.ErrorCode.BAD_REQUEST;
 import static tukano.api.Result.ErrorCode.FORBIDDEN;
-import static utils.DB.getOne;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,24 +15,24 @@ import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 import jakarta.ws.rs.core.SecurityContext;
-import org.checkerframework.checker.units.qual.C;
 import tukano.api.*;
 import tukano.api.Short;
+import tukano.api.clients.RestBlobsClient;
+import tukano.api.rest.RestBlobs;
 import tukano.impl.cache.RedisCacheShorts;
 import tukano.impl.cache.ShortsCache;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
 import tukano.impl.database.*;
-import tukano.impl.rest.MainApplication;
 import utils.ConfigLoader;
-import utils.FakeSecurityContext;
+import utils.Auth;
 
 public class JavaShorts implements Shorts {
 
 	private static Logger Log = Logger.getLogger(JavaShorts.class.getName());
 
 	private ShortsCache cache;
-
+	private RestBlobsClient blobs;
 	private ShortsDatabse dbImpl;
 	private static Shorts instance;
 	
@@ -45,9 +44,10 @@ public class JavaShorts implements Shorts {
 	
 	private JavaShorts() {
 		this.cache = new RedisCacheShorts();
+		this.blobs = new RestBlobsClient();
 
 		if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.COSMOS.toString()))
-			this.dbImpl = new CosmosDBShorts();
+			throw new RuntimeException("Not implemented");
 		else if (ConfigLoader.getInstance().getUsedDbType().equals(DbType.POSTGRESQL.toString()))
 			this.dbImpl = new PostegreShorts();
 		else Log.info(() -> format("Invalid DB Type"));
@@ -60,10 +60,10 @@ public class JavaShorts implements Shorts {
 
 		Result<Short> result = errorOrResult( okUser(userId, sc), user -> {
 			var shortId = format("%s+%s", userId, UUID.randomUUID());
-			var blobUrl = format("%s/%s/%s", MainApplication.serverURI, Blobs.NAME, shortId);
+			var blobUrl = format("%s%s/%s", ConfigLoader.getInstance().getExternalEndpoint(), RestBlobs.PATH, shortId);
 			var shrt = new Short(shortId, userId, blobUrl);
 
-			return errorOrValue(dbImpl.createShort(shrt), s -> s.copyWithLikes_And_Token(0, user.getRole()));
+			return errorOrValue(dbImpl.createShort(shrt), s -> s.copyWithLikes_And_Token(0));
 		});
 
 		if(result.isOK()) {
@@ -83,12 +83,11 @@ public class JavaShorts implements Shorts {
 		if( shortId == null )
 			return error(BAD_REQUEST);
 
-		Result<Short> caheRes = this.cache.getShort(shortId);
-		if(caheRes.isOK())
-			return caheRes;
+		Result<Short> cacheRes = this.cache.getShort(shortId);
+		if(cacheRes.isOK())
+			return cacheRes;
 		var likes = dbImpl.getLikesCount(shortId);
-		// TODO no copy passamos a role do user
-		Result<Short> bdRes = errorOrValue(dbImpl.getShort(shortId), shrt -> shrt.copyWithLikes_And_Token(likes, Token.Role.USER));
+		Result<Short> bdRes = errorOrValue(dbImpl.getShort(shortId), shrt -> shrt.copyWithLikes_And_Token(likes));
 		if(bdRes.isOK()) {
 			Executors.defaultThreadFactory().newThread(() -> {
 				Short shrt = bdRes.value();
@@ -124,8 +123,7 @@ public class JavaShorts implements Shorts {
 		Result<List<String>> cacheRes = this.cache.getShorts(userId);
 		if(cacheRes.isOK())
 			return cacheRes;
-
-		Result<List<String>> bdRes = errorOrValue( okUser(userId), dbImpl.getShorts(userId));
+		Result<List<String>> bdRes = dbImpl.getShorts(userId);
 		if (bdRes.isOK()) {
 			Executors.defaultThreadFactory().newThread(() -> {
 				this.cache.cacheShorts(userId, bdRes.value());
@@ -227,23 +225,24 @@ public class JavaShorts implements Shorts {
 	private Result<User> okUser(String userId, SecurityContext sc) {
 		return JavaUsers.getInstance().getUser(sc, userId);
 	}
-	
+
+	@Override
+	public Result<Void> deleteAllShorts(SecurityContext sc, String userId) {
+		Log.info(() -> format("deleteAllShorts : userId = %s\n", userId));
+
+		var res = errorOrVoid( okUser( userId, sc), dbImpl.deleteAllShorts(userId));
+		if (res.isOK()) {
+			return blobs.deleteAllBlobs(sc, userId);
+		}
+		return res;
+	}
+
 	private Result<Void> okUser( String userId ) {
-		var res = okUser(userId, FakeSecurityContext.get(userId));
+		var res = okUser(userId, Auth.fakeSecurityContext(userId));
 		if( res.error() != FORBIDDEN )
 			return ok();
 		else
 			return error( res.error() );
-	}
-	
-	@Override
-	public Result<Void> deleteAllShorts(String userId, String token) {
-		Log.info(() -> format("deleteAllShorts : userId = %s, token = %s\n", userId, token));
-
-		if( ! Token.isValid( token, Token.Service.BLOBS, userId) )
-			return error(FORBIDDEN);
-
-		return dbImpl.deleteAllShorts(userId, token);
 	}
 
 	@Override

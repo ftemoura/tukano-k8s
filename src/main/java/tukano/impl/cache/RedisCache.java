@@ -26,7 +26,7 @@ public class RedisCache {
 
     private static final boolean CACHE_ENABLED = ConfigLoader.getInstance().isCacheEnabled();
     private static final int REDIS_TIMEOUT = 2000;
-    private static final boolean REDIS_USE_TLS = true;
+    private static final boolean REDIS_USE_TLS = false;
     private static final Logger log = LoggerFactory.getLogger(RedisCache.class);
 
 
@@ -47,13 +47,15 @@ public class RedisCache {
         poolConfig.setTestWhileIdle(true);
         poolConfig.setNumTestsPerEvictionRun(3);
         poolConfig.setBlockWhenExhausted(true);
-        instance = new JedisPool(poolConfig, redisHostname, redisPort, REDIS_TIMEOUT,redisKey, REDIS_USE_TLS);
+        instance = new JedisPool(poolConfig, redisHostname, redisPort, REDIS_TIMEOUT);
+        //instance = new JedisPool(poolConfig, redisHostname, redisPort, REDIS_TIMEOUT, redisKey, REDIS_USE_TLS);
         return instance;
     }
 
     private <T> Result<T> cache(Function<Void,Result<T>> f) {
-        if (CACHE_ENABLED)
+        if (CACHE_ENABLED) {
             return f.apply(null);
+        }
         return Result.error(NOT_FOUND);
 
     }

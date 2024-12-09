@@ -21,17 +21,17 @@ public class RestBlobsResource extends RestResource implements RestBlobs {
 	}
 
 	@Override
-	public byte[] download(String blobId, String token) {
-		return super.resultOrThrow( impl.download(blobId, token ));
+	public byte[] download(String blobId) {
+		return super.resultOrThrow( impl.download(blobId));
 	}
 
 	@Override
-	public void delete(String blobId, String token) {
-		super.resultOrThrow( impl.delete(blobId, token ));
+	public void delete(SecurityContext sc, String blobId) {
+		super.resultOrThrow( impl.delete(sc, blobId));
 	}
 	
 	@Override
-	public void deleteAllBlobs(String userId, String password) {
-		super.resultOrThrow( impl.deleteAllBlobs(userId, password ));
+	public void deleteAllBlobs(SecurityContext sc, String userId) {
+		super.resultOrThrow( impl.deleteAllBlobs(sc, userId));
 	}
 }
