@@ -9,6 +9,8 @@ import tukano.api.Result;
 import tukano.api.Short;
 import tukano.api.Shorts;
 import tukano.api.rest.RestShorts;
+import tukano.impl.Token;
+import utils.Auth;
 import utils.ConfigLoader;
 
 public class RestShortsClient extends RestClient implements Shorts{
@@ -46,6 +48,7 @@ public class RestShortsClient extends RestClient implements Shorts{
                 target
                         .path(shortId)
                         .request()
+                        .cookie("AUTH",Token.get(Token.Service.AUTH, shortId, Token.Role.USER))
                         .get(), Short.class);
     }
 
@@ -136,8 +139,9 @@ public class RestShortsClient extends RestClient implements Shorts{
     public Result<Void> _updateShortViews(String shortId, Long views) {
         return super.toJavaResult(
                 target
-                        .path(shortId)
+                        .path(shortId).path(RestShorts.VIEWS)
                         .request()
+                        .cookie("AUTH",Token.get(Token.Service.AUTH, shortId, Token.Role.USER))
                         .put( Entity.entity(views, MediaType.APPLICATION_JSON)));
     }
 
