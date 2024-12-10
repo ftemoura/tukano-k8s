@@ -1,4 +1,4 @@
-# Tukano
+# Tukano - Kubernetes Version
 <p align="center">
 <img src="./architecture.svg">
 </p>
