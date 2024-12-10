@@ -238,7 +238,7 @@ public class JavaShorts implements Shorts {
 	}
 
 	private Result<Void> okUser( String userId ) {
-		var res = okUser(userId, Auth.fakeSecurityContext(userId));
+		var res = okUser(userId, Auth.fakeSecurityContext(Token.get(Token.Service.AUTH, userId, Token.Role.ADMIN)));
 		if( res.error() != FORBIDDEN )
 			return ok();
 		else

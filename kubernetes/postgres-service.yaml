@@ -76,7 +76,6 @@ metadata:
   labels:
     app: postgres
 spec:
-  type: NodePort
   selector:
     app: postgres
   ports:

@@ -3,10 +3,14 @@
 red_err()(set -o pipefail;"$@" 2> >(sed $'s,.*,\e[31m&\e[m,'>&2))
 export -f red_err
 
+set -a
+source .secrets
+source .config
+set +a
+
 AKS_NAME=aks-tukano-60045-60174
 ACR_NAME=acrtukano6004560174
 RESOURCE_GROUP=aks-test-60174-rg
-AZURE_REGION=francecentral
 DNS_LABEL=tukano6004560174
 
 TUKANO_IMAGE_NAME=tukano-tomcat
@@ -66,11 +70,6 @@ fi
 az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_NAME
 
 kubectl delete all --all
-
-set -a
-source .secrets
-source .config
-set +a
 
 kubectl delete secrets postgres-secret
 kubectl create secret generic postgres-secret \

@@ -25,7 +25,7 @@ public class JavaBlobs implements Blobs {
 	private final RestShortsClient shorts;
 	private BlobStorage storage;
 	private RedisCacheBlobs cache;
-	private static final Long MAX_TIME_WITHOUT_UPDATE = 120000L;//2min
+	private static final Long MAX_TIME_WITHOUT_UPDATE = 40000L;//30sec
 
 	synchronized public static Blobs getInstance() {
 		if( instance == null )
