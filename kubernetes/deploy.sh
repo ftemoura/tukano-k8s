@@ -95,11 +95,11 @@ echo EXTERNAL_ENDPOINT="http://${DNS_LABEL}.${AZURE_REGION}.cloudapp.azure.com/r
 kubectl create configmap tukano-config --from-env-file=$tmpconfig
 
 if $CACHE_ENABLED; then
-  kubectl apply -f redis-service.yaml
+  kubectl apply -f manifests/redis-service.yaml
 fi
 
-kubectl apply -f postgres-service.yaml
-kubectl apply -f tukano-service.yaml
+kubectl apply -f manifests/postgres-service.yaml
+kubectl apply -f manifests/tukano-service.yaml
 
 add_dns
 
