@@ -1,19 +1,11 @@
 #!/bin/bash
 
-red_err()(set -o pipefail;"$@" 2> >(sed $'s,.*,\e[31m&\e[m,'>&2))
-export -f red_err
-
 set -a
 source .secrets
 source .config
 set +a
 
-AKS_NAME=aks-tukano-60045-60174
-ACR_NAME=acrtukano6004560174
-RESOURCE_GROUP=aks-test-60174-rg
-DNS_LABEL=tukano6004560174
-
-TUKANO_IMAGE_NAME=tukano-tomcat
+export DOCKER_BUILDKIT=1
 
 add_dns() {
   LB_RG=$(az aks show --name $AKS_NAME --resource-group $RESOURCE_GROUP --query "nodeResourceGroup" -o tsv)
@@ -29,7 +21,20 @@ add_dns() {
   fi
 }
 
-export DOCKER_BUILDKIT=1
+attach_tukano() {
+  while :
+  do
+   kubectl attach $(kubectl get pods --output name | grep tukano) 
+  done
+}
+
+attach_blobs() {
+  while :
+  do
+   kubectl attach $(kubectl get pods --output name | grep blobs) 
+  done
+}
+
 cd ..
 docker build -t $ACR_NAME.azurecr.io/$TUKANO_IMAGE_NAME -f kubernetes/Dockerfile --build-arg DEPLOY_APPLICATION_CLASS=TukanoApplication . 1> /dev/null
 if [ $? -ne 0 ]; then
@@ -67,6 +72,7 @@ else
     az aks approuting enable -n $AKS_NAME -g $RESOURCE_GROUP 
   fi
 fi
+
 az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_NAME
 
 kubectl delete all --all
@@ -89,27 +95,14 @@ echo EXTERNAL_ENDPOINT="http://${DNS_LABEL}.${AZURE_REGION}.cloudapp.azure.com/r
 kubectl create configmap tukano-config --from-env-file=$tmpconfig
 
 if $CACHE_ENABLED; then
-  red_err kubectl apply -f redis-service.yaml
+  kubectl apply -f redis-service.yaml
 fi
-red_err kubectl apply -f postgres-service.yaml
-red_err kubectl apply -f tukano-service.yaml
+
+kubectl apply -f postgres-service.yaml
+kubectl apply -f tukano-service.yaml
 
 add_dns
 
 echo "Attaching to Tukano..."
-
-attach_tukano() {
-  while :
-  do
-   kubectl attach $(kubectl get pods --output name | grep tukano) 
-  done
-}
-
-attach_blobs() {
-  while :
-  do
-   kubectl attach $(kubectl get pods --output name | grep blobs) 
-  done
-}
 
 attach_tukano
